@@ -96,6 +96,7 @@ function getWebviewContent() {
 				body {
 					background-color: #fff;
 					margin: 0;
+					padding: 0;
 					overflow: hidden;
 				}
 
@@ -202,11 +203,11 @@ function getWebviewContent() {
 					.text(function (d) {
 						return d.label.replace(/_*/g, "");
 					})
-					.attr(
-						"font-family",
-						"-apple-system, BlinkMacSystemFont, “Roboto”, “Droid Sans”, “Helvetica Neue”, Helvetica, Arial, sans-serif"
-					)
-					.attr("font-size", \`\${fontSize}px\`)
+					// .attr(
+					// 	"font-family",
+					// 	"-apple-system, BlinkMacSystemFont, “Roboto”, “Droid Sans”, “Helvetica Neue”, Helvetica, Arial, sans-serif"
+					// )
+					// .attr("font-size", \`\${fontSize}px\`)
 					.attr("fill", "#444")
 					.on("click", onClick);
 
