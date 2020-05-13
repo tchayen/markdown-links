@@ -2,7 +2,13 @@ import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
 
-const regex = /\[[A-z ]+\]\(.*\.md\)/g;
+const fileName = `[A-z ]+`;
+const notHttp = `(?!http)`;
+const anythingButBracket = `[^\\)]+`;
+const regex = new RegExp(
+  `\\[${fileName}\\]\\(${notHttp}${anythingButBracket}\\.md\\)`,
+  "g"
+);
 
 type Edge = {
   source: string;
@@ -133,10 +139,39 @@ export function activate(context: vscode.ExtensionContext) {
         edges = edges.filter(
           (edge) => edge.source !== event.path && edge.target !== event.path
         );
+
         panel.webview.postMessage({
           type: "refresh",
           payload: { nodes, edges },
         });
+      });
+
+      vscode.workspace.onDidRenameFiles(async (event) => {
+        for (const file of event.files) {
+          const previous = file.oldUri.path;
+          const next = file.newUri.path;
+
+          for (const edge of edges) {
+            if (edge.source === previous) {
+              edge.source = next;
+            }
+
+            if (edge.target === previous) {
+              edge.target = next;
+            }
+          }
+
+          for (const node of nodes) {
+            if (node.path === previous) {
+              node.path = next;
+            }
+          }
+
+          panel.webview.postMessage({
+            type: "refresh",
+            payload: { nodes, edges },
+          });
+        }
       });
 
       panel.webview.onDidReceiveMessage(
@@ -222,12 +257,16 @@ function getWebviewContent() {
       const width = +svg.attr("width");
       const height = +svg.attr("height");
 
-      const radius = 5;
-      const stroke = 2;
-      const fontSize = 14;
+      const radius = 2;
+      const stroke = 1;
+			const fontSize = 14;
+			const minZoom = 0.8;
+			const maxZoom = 1.5;
 
       let nodesData = ${JSON.stringify(nodes)};
-      let linksData = ${JSON.stringify(edges)};
+			let linksData = ${JSON.stringify(edges)};
+
+			console.log({ nodesData, linksData})
 
       const onClick = (d) => {
         vscode.postMessage({ type: "click", payload: d });
@@ -245,17 +284,13 @@ function getWebviewContent() {
         }
       });
 
-      const zoomHandler = d3.zoom().on("zoom", zoomActions);
+			const zoomHandler = d3.zoom()
+				.scaleExtent([0.2, 3])
+				.translateExtent([[0,0], [width, height]])
+				.extent([[0, 0], [width, height]])
+				.on("zoom", zoomActions);
 
       zoomHandler(svg);
-
-      function zoomActions() {
-        const scale = d3.zoomTransform(this);
-        g.attr("transform", d3.event.transform);
-        text.attr("font-size", \`\${fontSize / scale.k}px\`);
-        node.attr("r", radius / scale.k);
-        link.attr("stroke-width", stroke / scale.k);
-      }
 
       let simulation = d3
         .forceSimulation(nodesData)
@@ -277,6 +312,13 @@ function getWebviewContent() {
 
       restart();
 
+			function zoomActions() {
+				const scale = d3.event.transform;
+				g.attr("transform", scale);
+				const font = scale.k >= 1 ? fontSize / scale.k : fontSize
+				text.attr("font-size", \`\${font}px\`);
+			}
+
       function restart() {
         node = node.data(nodesData, (d) => d.path);
         node.exit().remove();
@@ -295,7 +337,6 @@ function getWebviewContent() {
           .attr("stroke-width", stroke)
           .merge(link);
 
-					console.log(2, nodesData)
         text = text.data(nodesData, (d) => d.label);
         text.exit().remove();
         text = text
