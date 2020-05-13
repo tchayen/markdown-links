@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
+import * as path from "path";
 
-const regex = /\[[A-z ]+\]\(\d+\.md\)/g;
+const regex = /\[[A-z ]+\]\(.*\.md\)/g;
 
 type Edge = {
   source: string;
@@ -13,11 +14,11 @@ type Node = {
   label: string;
 };
 
-const nodes: Node[] = [];
-const edges: Edge[] = [];
+let nodes: Node[] = [];
+let edges: Edge[] = [];
 
-const parseFile = async (path: string) => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(path));
+const parseFile = async (filePath: string) => {
+  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
   const title = content.match(/^\# .*/);
 
@@ -25,37 +26,69 @@ const parseFile = async (path: string) => {
     return;
   }
 
-  nodes.push({ path, label: title[0].substring(2) });
+  const index = nodes.findIndex((node) => node.path === filePath);
+  if (index !== -1) {
+    nodes[index].label = title[0].substring(2);
+  } else {
+    nodes.push({ path: filePath, label: title[0].substring(2) });
+  }
+
+  edges = edges.filter((edge) => edge.source !== filePath);
 
   const files = content.match(regex) || [];
   for (const file of files) {
     const target = file.substring(file.indexOf("]") + 2, file.length - 1);
     edges.push({
-      source: path,
-      target: `${path.split("/").slice(0, -1).join("/")}/${target}`,
+      source: filePath,
+      target: path.normalize(
+        `${filePath.split("/").slice(0, -1).join("/")}/${target}`
+      ),
     });
   }
 };
 
-const parseDirectory = async (path: string) => {
-  const files = await vscode.workspace.fs.readDirectory(vscode.Uri.file(path));
+const parseDirectory = async (filePath: string) => {
+  const files = await vscode.workspace.fs.readDirectory(
+    vscode.Uri.file(filePath)
+  );
 
   for (const file of files) {
     if (file[1] === vscode.FileType.Directory && !file[0].startsWith(".")) {
-      await parseDirectory(`${path}/${file[0]}`);
+      await parseDirectory(`${filePath}/${file[0]}`);
     } else if (file[1] === vscode.FileType.File && file[0].endsWith(".md")) {
-      await parseFile(`${path}/${file[0]}`);
+      await parseFile(`${filePath}/${file[0]}`);
     }
   }
 };
 
+const settingToValue = {
+  active: -1,
+  beside: -2,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+};
+
 export function activate(context: vscode.ExtensionContext) {
+  const {
+    theme,
+    column,
+    ignoreDirectories,
+    ignoreFiles,
+  } = vscode.workspace.getConfiguration("markdown-links");
+
   context.subscriptions.push(
     vscode.commands.registerCommand("markdown-links.showGraph", async () => {
       const panel = vscode.window.createWebviewPanel(
         "markdownLinks",
         "Markdown Links",
-        vscode.ViewColumn.One,
+        settingToValue[column as any] as any,
         {
           enableScripts: true,
           retainContextWhenHidden: true,
@@ -67,9 +100,44 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
+      nodes = [];
+      edges = [];
+
       await parseDirectory(vscode.workspace.rootPath);
 
       panel.webview.html = getWebviewContent();
+
+      const watcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(vscode.workspace.rootPath, "**/*.md"),
+        false,
+        false,
+        false
+      );
+
+      watcher.onDidChange(async (event) => {
+        await parseFile(event.path);
+        console.log(nodes);
+        panel.webview.postMessage({
+          type: "refresh",
+          payload: { nodes, edges },
+        });
+      });
+
+      watcher.onDidDelete(async (event) => {
+        const index = nodes.findIndex((node) => node.path === event.path);
+        if (index === -1) {
+          return;
+        }
+
+        nodes.splice(index, 1);
+        edges = edges.filter(
+          (edge) => edge.source !== event.path && edge.target !== event.path
+        );
+        panel.webview.postMessage({
+          type: "refresh",
+          payload: { nodes, edges },
+        });
+      });
 
       panel.webview.onDidReceiveMessage(
         (message) => {
@@ -83,6 +151,10 @@ export function activate(context: vscode.ExtensionContext) {
         undefined,
         context.subscriptions
       );
+
+      panel.onDidDispose(() => {
+        watcher.dispose();
+      });
     })
   );
 }
@@ -90,231 +162,166 @@ export function activate(context: vscode.ExtensionContext) {
 function getWebviewContent() {
   return `<!DOCTYPE html>
 	<html>
-		<head>
-			<meta charset="utf-8" />
-			<style>
-				body {
-					background-color: #fff;
-					margin: 0;
-					padding: 0;
-					overflow: hidden;
-				}
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+			}
 
-				.nodes circle {
-					cursor: pointer;
-				}
+			.links line {
+				stroke: rgba(0, 0, 0, 0.2);
+			}
 
-				.text text {
-					cursor: pointer;
-				}
-			</style>
-			<script src="https://d3js.org/d3.v4.min.js"></script>
-		</head>
-		<body>
-			<script>
-				const vscode = acquireVsCodeApi();
+      .nodes circle {
+				cursor: pointer;
+				fill: rgba(0, 0, 0, 0.2);
+      }
 
-				const element = document.createElementNS(
-					"http://www.w3.org/2000/svg",
-					"svg"
-				);
-				element.setAttribute("width", window.innerWidth);
-				element.setAttribute("height", window.innerHeight);
-				document.body.appendChild(element);
+      .text text {
+				cursor: pointer;
+				fill: rgba(0, 0, 0, 0.8);
+			}
 
-				function reportWindowSize() {
-					element.setAttribute("width", window.innerWidth);
-					element.setAttribute("height", window.innerHeight);
-				}
+			body.vscode-dark .links line {
+				stroke: rgba(255, 255, 255, 0.2);
+			}
 
-				window.onresize = reportWindowSize;
+			body.vscode-dark .nodes circle {
+				fill: rgba(255, 255, 255, 0.2);
+			}
 
-				//create somewhere to put the force directed graph
-				var svg = d3.select("svg"),
-					width = +svg.attr("width"),
-					height = +svg.attr("height");
+			body.vscode-dark .text text {
+				fill: rgba(255, 255, 255, 0.8);
+			}
+    </style>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+  </head>
+  <body class="vscode-dark">
+    <script>
+      const vscode = acquireVsCodeApi();
 
-				const radius = 5;
-				const stroke = 2;
-				const fontSize = 14;
+      const element = document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "svg"
+      );
+      element.setAttribute("width", window.innerWidth);
+      element.setAttribute("height", window.innerHeight);
+      document.body.appendChild(element);
 
-				var nodes_data = ${JSON.stringify(nodes)};
+      function reportWindowSize() {
+        element.setAttribute("width", window.innerWidth);
+        element.setAttribute("height", window.innerHeight);
+      }
 
-				//Sample links data
-				//type: A for Ally, E for Enemy
-				var links_data = ${JSON.stringify(edges)};
+      window.onresize = reportWindowSize;
 
-				const onClick = (d) => {
-					vscode.postMessage({ type: 'click', payload: d })
-				}
+      const svg = d3.select("svg");
+      const width = +svg.attr("width");
+      const height = +svg.attr("height");
 
-				//set up the simulation and add forces
-				var simulation = d3.forceSimulation().nodes(nodes_data);
+      const radius = 5;
+      const stroke = 2;
+      const fontSize = 14;
 
-				var link_force = d3.forceLink(links_data).id(function (d) {
-					return d.path;
-				});
+      let nodesData = ${JSON.stringify(nodes)};
+      let linksData = ${JSON.stringify(edges)};
 
-				var charge_force = d3.forceManyBody().strength(-100);
+      const onClick = (d) => {
+        vscode.postMessage({ type: "click", payload: d });
+			};
 
-				var center_force = d3.forceCenter(width / 2, height / 2);
+			window.addEventListener("message", (event) => {
+        const message = event.data;
+        switch (message.type) {
+          case "refresh":
+						nodesData = message.payload.nodes;
+						console.log(nodesData);
+						linksData = message.payload.edges;
+						restart();
+            break;
+        }
+      });
 
-				simulation
-					.force("charge_force", charge_force)
-					.force("center_force", center_force)
-					.force("links", link_force);
+      const zoomHandler = d3.zoom().on("zoom", zoomActions);
 
-				//add tick instructions:
-				simulation.on("tick", tickActions);
+      zoomHandler(svg);
 
-				//add encompassing group for the zoom
-				var g = svg.append("g").attr("class", "everything");
+      function zoomActions() {
+        const scale = d3.zoomTransform(this);
+        g.attr("transform", d3.event.transform);
+        text.attr("font-size", \`\${fontSize / scale.k}px\`);
+        node.attr("r", radius / scale.k);
+        link.attr("stroke-width", stroke / scale.k);
+      }
 
-				//draw lines for the links
-				var link = g
-					.append("g")
-					.attr("class", "links")
-					.selectAll("line")
-					.data(links_data)
-					.enter()
-					.append("line")
-					.attr("stroke-width", stroke)
-					.style("stroke", linkColour);
+      let simulation = d3
+        .forceSimulation(nodesData)
+        .force("charge", d3.forceManyBody().strength(-500))
+        .force(
+          "link",
+          d3
+            .forceLink(linksData)
+            .id((d) => d.path)
+            .distance(70)
+        )
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .on("tick", ticked);
 
-				//draw circles for the nodes
-				var node = g
-					.append("g")
-					.attr("class", "nodes")
-					.selectAll("circle")
-					.data(nodes_data)
-					.enter()
-					.append("circle")
-					.attr("r", radius)
-					.attr("fill", circleColour)
-					.on("click", onClick);
+      let g = svg.append("g");
+      let link = g.append("g").attr("class", "links").selectAll(".link");
+      let node = g.append("g").attr("class", "nodes").selectAll(".node");
+      let text = g.append("g").attr("class", "text").selectAll(".text");
 
-				var text = g
-					.append("g")
-					.attr("class", "text")
-					.selectAll("circle")
-					.data(nodes_data)
-					.enter()
-					.append("text")
-					.text(function (d) {
-						return d.label.replace(/_*/g, "");
-					})
-					// .attr(
-					// 	"font-family",
-					// 	"-apple-system, BlinkMacSystemFont, “Roboto”, “Droid Sans”, “Helvetica Neue”, Helvetica, Arial, sans-serif"
-					// )
-					// .attr("font-size", \`\${fontSize}px\`)
-					.attr("fill", "#444")
-					.on("click", onClick);
+      restart();
 
-				//add drag capabilities
-				var drag_handler = d3
-					.drag()
-					.on("start", drag_start)
-					.on("drag", drag_drag)
-					.on("end", drag_end);
+      function restart() {
+        node = node.data(nodesData, (d) => d.path);
+        node.exit().remove();
+        node = node
+          .enter()
+          .append("circle")
+          .attr("r", radius)
+          .on("click", onClick)
+          .merge(node);
 
-				drag_handler(node);
+        link = link.data(linksData, (d) => \`\${d.source.path}-\${d.target.path}\`);
+        link.exit().remove();
+        link = link
+          .enter()
+          .append("line")
+          .attr("stroke-width", stroke)
+          .merge(link);
 
-				//add zoom capabilities
-				var zoom_handler = d3.zoom().on("zoom", zoom_actions);
+					console.log(2, nodesData)
+        text = text.data(nodesData, (d) => d.label);
+        text.exit().remove();
+        text = text
+          .enter()
+          .append("text")
+          .text((d) => d.label.replace(/_*/g, ""))
+          .attr("font-size", \`\${fontSize}px\`)
+          .on("click", onClick)
+          .merge(text);
 
-				zoom_handler(svg);
+        simulation.nodes(nodesData);
+        simulation.force("link").links(linksData);
+        simulation.alpha(1).restart();
+      }
 
-				/** Functions **/
-
-				//Function to choose what color circle we have
-				//Let's return blue for males and red for females
-				function circleColour(d) {
-					return "#eee";
-				}
-
-				//Function to choose the line colour and thickness
-				//If the link type is "A" return green
-				//If the link type is "E" return red
-				function linkColour(d) {
-					return "#eee";
-				}
-
-				//Drag functions
-				//d is the node
-				function drag_start(d) {
-					if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-					d.fx = d.x;
-					d.fy = d.y;
-				}
-
-				//make sure you can't drag the circle outside the box
-				function drag_drag(d) {
-					d.fx = d3.event.x;
-					d.fy = d3.event.y;
-				}
-
-				function drag_end(d) {
-					if (!d3.event.active) simulation.alphaTarget(0);
-					d.fx = null;
-					d.fy = null;
-				}
-
-				//Zoom functions
-				function zoom_actions() {
-					const scale = d3.zoomTransform(this);
-					g.attr("transform", d3.event.transform);
-
-					text
-						.attr("font-size", \`\${fontSize / scale.k}px\`)
-						.attr("x", function (d) {
-							return d.x;
-						})
-						.attr("y", function (d) {
-							return d.y;
-						});
-
-					node.attr("r", radius / scale.k);
-
-					link.attr("stroke-width", stroke / scale.k);
-				}
-
-				function tickActions() {
-					//update circle positions each tick of the simulation
-					const scale = d3.zoomTransform(this);
-					node
-						.attr("cx", function (d) {
-							return d.x;
-						})
-						.attr("cy", function (d) {
-							return d.y;
-						});
-
-					text
-						.attr("x", function (d) {
-							return d.x;
-						})
-						.attr("y", function (d) {
-							return d.y;
-						});
-
-					//update link positions
-					link
-						.attr("x1", function (d) {
-							return d.source.x;
-						})
-						.attr("y1", function (d) {
-							return d.source.y;
-						})
-						.attr("x2", function (d) {
-							return d.target.x;
-						})
-						.attr("y2", function (d) {
-							return d.target.y;
-						});
-				}
-			</script>
-		</body>
-	</html>
+      function ticked() {
+        node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+        text.attr("x", (d) => d.x).attr("y", (d) => d.y);
+        link
+          .attr("x1", (d) => d.source.x)
+          .attr("y1", (d) => d.source.y)
+          .attr("x2", (d) => d.target.x)
+          .attr("y2", (d) => d.target.y);
+      }
+    </script>
+  </body>
+</html>
 	`;
 }
