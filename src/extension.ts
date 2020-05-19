@@ -308,7 +308,8 @@ function getWebviewContent(theme: string) {
       const stroke = 1;
 			const fontSize = 14;
 			const minZoom = 0.8;
-			const maxZoom = 1.5;
+      const maxZoom = 1.5;
+      const ticks = 300;
 
       let nodesData = ${JSON.stringify(nodes)};
 			let linksData = ${JSON.stringify(edges)};
@@ -393,7 +394,8 @@ function getWebviewContent(theme: string) {
             .distance(70)
         )
         .force("center", d3.forceCenter(width / 2, height / 2))
-        .on("tick", ticked);
+        .on("tick", ticked)
+        .stop();
 
       let g = svg.append("g");
       let link = g.append("g").attr("class", "links").selectAll(".link");
@@ -440,6 +442,13 @@ function getWebviewContent(theme: string) {
         simulation.nodes(nodesData);
         simulation.force("link").links(linksData);
         simulation.alpha(1).restart();
+        simulation.stop();
+
+        for (let i = 0; i < ticks; i++) {
+          simulation.tick();
+        }
+
+        ticked();
       }
 
       function ticked() {
