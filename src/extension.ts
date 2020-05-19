@@ -8,10 +8,6 @@ import * as md5 from "md5";
 const fileName = `[A-z ]+`;
 const notHttp = `(?!http)`;
 const anythingButBracket = `[^\\)]+`;
-const regex = new RegExp(
-  `\\[${fileName}\\]\\(${notHttp}${anythingButBracket}\\.md\\)`,
-  "g"
-);
 
 type Edge = {
   source: string;
@@ -242,14 +238,33 @@ export function activate(context: vscode.ExtensionContext) {
       await parseDirectory(vscode.workspace.rootPath);
       filterNonExistingEdges();
 
-      panel.webview.html = getWebviewContent(theme, nodes, edges);
+      // /Users/tchayen/lab/markdown-links/node_modules/d3/build/d3.min.js
+
+      const d3Uri = panel.webview.asWebviewUri(
+        vscode.Uri.file(
+          path.join(
+            context.extensionPath,
+            "node_modules",
+            "d3",
+            "build",
+            "d3.min.js"
+          )
+        )
+      );
+
+      panel.webview.html = getWebviewContent(theme, nodes, edges, d3Uri);
 
       watch(context, panel);
     })
   );
 }
 
-function getWebviewContent(theme: string, nodes: Node[], edges: Edge[]) {
+function getWebviewContent(
+  theme: string,
+  nodes: Node[],
+  edges: Edge[],
+  d3Uri: vscode.Uri
+) {
   // TODO:
   // Use theme setting to override the default value.
   console.log("theme", theme);
@@ -329,7 +344,7 @@ function getWebviewContent(theme: string, nodes: Node[], edges: Edge[]) {
         color: #666;
       }
     </style>
-    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="${d3Uri}"></script>
   </head>
   <body>
    <div class="buttons">
