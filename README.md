@@ -2,6 +2,39 @@
 
 Adds command `Show Graph` that displays a graph of links between files in the current working directory.
 
+## Example usage
+
+Let's say you have a directory with three files:
+
+**./one.md**
+
+```md
+# One
+
+[Second](second.md)
+```
+
+**./2.md**
+
+```md
+# Two
+
+[One](one.md)
+[Three](three.md)
+```
+
+**./three.md**
+
+```md
+# Third one
+
+Only text.
+```
+
+If you press `Shift+CMD+P` and type `Show Graph`, a new tab will open with the graph view.
+
+Click on any filename to have it opened in the first column of the editor (or other if configured in settings).
+
 ## Settings
 
 This extension contributes the following settings:
