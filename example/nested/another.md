@@ -1,3 +1,0 @@
-# Another
-
-[Home](../README.md)

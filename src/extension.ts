@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
+import * as unified from "unified";
+import * as markdown from "remark-parse";
 
 const fileName = `[A-z ]+`;
 const notHttp = `(?!http)`;
@@ -23,33 +25,70 @@ type Node = {
 let nodes: Node[] = [];
 let edges: Edge[] = [];
 
-const parseFile = async (filePath: string) => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
-  const content = new TextDecoder("utf-8").decode(buffer);
-  const title = content.match(/^\# .*/);
+type MarkdownNode = {
+  type: string;
+  children?: MarkdownNode[];
+  url?: string;
+  value?: string;
+  depth?: number;
+};
 
-  if (title === null) {
+const findLinks = (ast: MarkdownNode): string[] => {
+  if (ast.type === "link" || ast.type === "definition") {
+    return [ast.url!];
+  }
+
+  const links: string[] = [];
+
+  if (!ast.children) {
+    return links;
+  }
+
+  for (const node of ast.children) {
+    links.push(...findLinks(node));
+  }
+
+  return links;
+};
+
+const parseFile = async (source: string) => {
+  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(source));
+  const content = new TextDecoder("utf-8").decode(buffer);
+  const ast: MarkdownNode = unified().use(markdown).parse(content);
+
+  let title = null;
+  if (
+    ast.children &&
+    ast.children.length > 0 &&
+    ast.children[0].type === "heading" &&
+    ast.children[0].depth === 1 &&
+    ast.children[0].children &&
+    ast.children[0].children.length > 0
+  ) {
+    title = ast.children[0].children[0].value!;
+  }
+
+  if (!title) {
     return;
   }
 
-  const index = nodes.findIndex((node) => node.path === filePath);
+  const index = nodes.findIndex((node) => node.path === source);
   if (index !== -1) {
-    nodes[index].label = title[0].substring(2);
+    nodes[index].label = title;
   } else {
-    nodes.push({ path: filePath, label: title[0].substring(2) });
+    nodes.push({ path: source, label: title });
   }
 
-  edges = edges.filter((edge) => edge.source !== filePath);
+  edges = edges.filter((edge) => edge.source !== source);
 
-  const files = content.match(regex) || [];
-  for (const file of files) {
-    const target = file.substring(file.indexOf("]") + 2, file.length - 1);
-    edges.push({
-      source: filePath,
-      target: path.normalize(
-        `${filePath.split("/").slice(0, -1).join("/")}/${target}`
-      ),
-    });
+  const links = findLinks(ast);
+
+  for (const link of links) {
+    const target = path.normalize(
+      `${source.split("/").slice(0, -1).join("/")}/${link}`
+    );
+
+    edges.push({ source, target });
   }
 };
 
@@ -67,6 +106,12 @@ const parseDirectory = async (filePath: string) => {
   }
 };
 
+const exists = (path: string) => !!nodes.find((node) => node.path === path);
+
+const filterNonExistingEdges = () => {
+  edges = edges.filter((edge) => exists(edge.source) && exists(edge.target));
+};
+
 const settingToValue = {
   active: -1,
   beside: -2,
@@ -82,12 +127,7 @@ const settingToValue = {
 };
 
 export function activate(context: vscode.ExtensionContext) {
-  const {
-    theme,
-    column,
-    ignoreDirectories,
-    ignoreFiles,
-  } = vscode.workspace.getConfiguration("markdown-links");
+  const { theme, column } = vscode.workspace.getConfiguration("markdown-links");
 
   context.subscriptions.push(
     vscode.commands.registerCommand("markdown-links.showGraph", async () => {
@@ -102,16 +142,18 @@ export function activate(context: vscode.ExtensionContext) {
       );
 
       if (vscode.workspace.rootPath === undefined) {
-        // TODO: show message.
+        // TODO: show vscode message.
         return;
       }
 
+      // Reset arrays.
       nodes = [];
       edges = [];
 
       await parseDirectory(vscode.workspace.rootPath);
+      filterNonExistingEdges();
 
-      panel.webview.html = getWebviewContent();
+      panel.webview.html = getWebviewContent(theme);
 
       const watcher = vscode.workspace.createFileSystemWatcher(
         new vscode.RelativePattern(vscode.workspace.rootPath, "**/*.md"),
@@ -120,9 +162,10 @@ export function activate(context: vscode.ExtensionContext) {
         false
       );
 
+      // Watch file changes in case user adds a link.
       watcher.onDidChange(async (event) => {
         await parseFile(event.path);
-        console.log(nodes);
+        filterNonExistingEdges();
         panel.webview.postMessage({
           type: "refresh",
           payload: { nodes, edges },
@@ -194,7 +237,11 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-function getWebviewContent() {
+function getWebviewContent(theme: string) {
+  // TODO:
+  // Use theme setting to override the default value.
+  console.log("theme", theme);
+
   return `<!DOCTYPE html>
 	<html>
   <head>
@@ -212,7 +259,7 @@ function getWebviewContent() {
 
       .nodes circle {
 				cursor: pointer;
-				fill: rgba(0, 0, 0, 0.2);
+				fill: #000;
       }
 
       .text text {
@@ -220,21 +267,21 @@ function getWebviewContent() {
 				fill: rgba(0, 0, 0, 0.8);
 			}
 
-			body.vscode-dark .links line {
+			.vscode-dark .links line {
 				stroke: rgba(255, 255, 255, 0.2);
 			}
 
-			body.vscode-dark .nodes circle {
-				fill: rgba(255, 255, 255, 0.2);
+			.vscode-dark .nodes circle {
+				fill: #fff;
 			}
 
-			body.vscode-dark .text text {
+			.vscode-dark .text text {
 				fill: rgba(255, 255, 255, 0.8);
 			}
     </style>
     <script src="https://d3js.org/d3.v4.min.js"></script>
   </head>
-  <body class="vscode-dark">
+  <body>
     <script>
       const vscode = acquireVsCodeApi();
 
@@ -270,15 +317,58 @@ function getWebviewContent() {
 
       const onClick = (d) => {
         vscode.postMessage({ type: "click", payload: d });
-			};
+      };
+
+      const sameNodes = (previous, next) => {
+        if (next.length !== previous.length) {
+          return false;
+        }
+
+        const set = new Set();
+        for (const node of previous) {
+          set.add(node.path);
+        }
+
+        for (const node of next) {
+          if (!set.has(node.path)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      const sameEdges = (previous, next) => {
+        if (next.length !== previous.length) {
+          return false;
+        }
+
+        const set = new Set();
+        for (const edge of previous) {
+          set.add(\`\${edge.source.path}-\${edge.target.path}\`);
+        }
+
+        for (const edge of next) {
+          if (!set.has(\`\${edge.source}-\${edge.target}\`)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
 
 			window.addEventListener("message", (event) => {
         const message = event.data;
         switch (message.type) {
           case "refresh":
-						nodesData = message.payload.nodes;
-						console.log(nodesData);
-						linksData = message.payload.edges;
+            const { nodes, edges } = message.payload;
+
+            if (sameNodes(nodesData, nodes) && sameEdges(linksData, edges)) {
+              return;
+            }
+
+						nodesData = nodes;
+						linksData = edges;
 						restart();
             break;
         }
@@ -286,15 +376,15 @@ function getWebviewContent() {
 
 			const zoomHandler = d3.zoom()
 				.scaleExtent([0.2, 3])
-				.translateExtent([[0,0], [width, height]])
-				.extent([[0, 0], [width, height]])
+				//.translateExtent([[0,0], [width, height]])
+				//.extent([[0, 0], [width, height]])
 				.on("zoom", zoomActions);
 
       zoomHandler(svg);
 
       let simulation = d3
         .forceSimulation(nodesData)
-        .force("charge", d3.forceManyBody().strength(-500))
+        .force("charge", d3.forceManyBody().strength(-300))
         .force(
           "link",
           d3

@@ -1,3 +1,0 @@
-# More
-
-[Another](another.md)

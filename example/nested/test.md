@@ -1,3 +1,0 @@
-# Test
-
-[Another](another.md)
