@@ -3,6 +3,7 @@ import { TextDecoder } from "util";
 import * as path from "path";
 import * as unified from "unified";
 import * as markdown from "remark-parse";
+import * as md5 from "md5";
 
 const fileName = `[A-z ]+`;
 const notHttp = `(?!http)`;
@@ -126,6 +127,94 @@ const settingToValue = {
   nine: 9,
 };
 
+const watch = (
+  context: vscode.ExtensionContext,
+  panel: vscode.WebviewPanel
+) => {
+  if (vscode.workspace.rootPath === undefined) {
+    return;
+  }
+
+  const watcher = vscode.workspace.createFileSystemWatcher(
+    new vscode.RelativePattern(vscode.workspace.rootPath, "**/*.md"),
+    false,
+    false,
+    false
+  );
+
+  // Watch file changes in case user adds a link.
+  watcher.onDidChange(async (event) => {
+    await parseFile(event.path);
+    filterNonExistingEdges();
+    panel.webview.postMessage({
+      type: "refresh",
+      payload: { nodes, edges },
+    });
+  });
+
+  watcher.onDidDelete(async (event) => {
+    const index = nodes.findIndex((node) => node.path === event.path);
+    if (index === -1) {
+      return;
+    }
+
+    nodes.splice(index, 1);
+    edges = edges.filter(
+      (edge) => edge.source !== event.path && edge.target !== event.path
+    );
+
+    panel.webview.postMessage({
+      type: "refresh",
+      payload: { nodes, edges },
+    });
+  });
+
+  vscode.workspace.onDidRenameFiles(async (event) => {
+    for (const file of event.files) {
+      const previous = file.oldUri.path;
+      const next = file.newUri.path;
+
+      for (const edge of edges) {
+        if (edge.source === previous) {
+          edge.source = next;
+        }
+
+        if (edge.target === previous) {
+          edge.target = next;
+        }
+      }
+
+      for (const node of nodes) {
+        if (node.path === previous) {
+          node.path = next;
+        }
+      }
+
+      panel.webview.postMessage({
+        type: "refresh",
+        payload: { nodes, edges },
+      });
+    }
+  });
+
+  panel.webview.onDidReceiveMessage(
+    (message) => {
+      if (message.type) {
+        const openPath = vscode.Uri.file(message.payload.path);
+        vscode.workspace.openTextDocument(openPath).then((doc) => {
+          vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        });
+      }
+    },
+    undefined,
+    context.subscriptions
+  );
+
+  panel.onDidDispose(() => {
+    watcher.dispose();
+  });
+};
+
 export function activate(context: vscode.ExtensionContext) {
   const { theme, column } = vscode.workspace.getConfiguration("markdown-links");
 
@@ -153,91 +242,14 @@ export function activate(context: vscode.ExtensionContext) {
       await parseDirectory(vscode.workspace.rootPath);
       filterNonExistingEdges();
 
-      panel.webview.html = getWebviewContent(theme);
+      panel.webview.html = getWebviewContent(theme, nodes, edges);
 
-      const watcher = vscode.workspace.createFileSystemWatcher(
-        new vscode.RelativePattern(vscode.workspace.rootPath, "**/*.md"),
-        false,
-        false,
-        false
-      );
-
-      // Watch file changes in case user adds a link.
-      watcher.onDidChange(async (event) => {
-        await parseFile(event.path);
-        filterNonExistingEdges();
-        panel.webview.postMessage({
-          type: "refresh",
-          payload: { nodes, edges },
-        });
-      });
-
-      watcher.onDidDelete(async (event) => {
-        const index = nodes.findIndex((node) => node.path === event.path);
-        if (index === -1) {
-          return;
-        }
-
-        nodes.splice(index, 1);
-        edges = edges.filter(
-          (edge) => edge.source !== event.path && edge.target !== event.path
-        );
-
-        panel.webview.postMessage({
-          type: "refresh",
-          payload: { nodes, edges },
-        });
-      });
-
-      vscode.workspace.onDidRenameFiles(async (event) => {
-        for (const file of event.files) {
-          const previous = file.oldUri.path;
-          const next = file.newUri.path;
-
-          for (const edge of edges) {
-            if (edge.source === previous) {
-              edge.source = next;
-            }
-
-            if (edge.target === previous) {
-              edge.target = next;
-            }
-          }
-
-          for (const node of nodes) {
-            if (node.path === previous) {
-              node.path = next;
-            }
-          }
-
-          panel.webview.postMessage({
-            type: "refresh",
-            payload: { nodes, edges },
-          });
-        }
-      });
-
-      panel.webview.onDidReceiveMessage(
-        (message) => {
-          if (message.type) {
-            const openPath = vscode.Uri.file(message.payload.path);
-            vscode.workspace.openTextDocument(openPath).then((doc) => {
-              vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
-            });
-          }
-        },
-        undefined,
-        context.subscriptions
-      );
-
-      panel.onDidDispose(() => {
-        watcher.dispose();
-      });
+      watch(context, panel);
     })
   );
 }
 
-function getWebviewContent(theme: string) {
+function getWebviewContent(theme: string, nodes: Node[], edges: Edge[]) {
   // TODO:
   // Use theme setting to override the default value.
   console.log("theme", theme);
@@ -251,37 +263,81 @@ function getWebviewContent(theme: string) {
         margin: 0;
         padding: 0;
         overflow: hidden;
+        background-color: #fff;
 			}
 
 			.links line {
-				stroke: rgba(0, 0, 0, 0.2);
+				stroke: #ccc;
 			}
 
       .nodes circle {
 				cursor: pointer;
-				fill: #000;
+				fill: #999;
       }
 
       .text text {
 				cursor: pointer;
-				fill: rgba(0, 0, 0, 0.8);
+				fill: #000;
 			}
 
-			.vscode-dark .links line {
-				stroke: rgba(255, 255, 255, 0.2);
-			}
+			// .vscode-dark .links line {
+			// 	stroke: rgba(255, 255, 255, 0.2);
+			// }
 
-			.vscode-dark .nodes circle {
-				fill: #fff;
-			}
+			// .vscode-dark .nodes circle {
+			// 	fill: #fff;
+			// }
 
-			.vscode-dark .text text {
-				fill: rgba(255, 255, 255, 0.8);
-			}
+			// .vscode-dark .text text {
+			// 	fill: rgba(255, 255, 255, 0.8);
+      // }
+
+      .buttons {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        display: flex:
+        flex-direction: row;
+        margin: 16px;
+      }
+
+      button {
+        border: none;
+        border-radius: 4px;
+        background-color: #eee;
+        font-size: 13px;
+        font-weight: bold;
+        height: 24px;
+        line-height: 24px;
+        padding: 0 10px 0 10px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #ddd;
+      }
+
+      button:active {
+        background-color: #ccc;
+      }
+
+      button:focus {
+        outline: none;
+      }
+
+      span {
+        color: #666;
+      }
     </style>
     <script src="https://d3js.org/d3.v4.min.js"></script>
   </head>
   <body>
+   <div class="buttons">
+      <!--<button id="minus">-</button>
+      <button id="reset">Reset</button>
+      <button id="plus">+</button>-->
+      <span id="zoom">1.00x</span>
+    </div>
     <script>
       const vscode = acquireVsCodeApi();
 
@@ -304,7 +360,7 @@ function getWebviewContent(theme: string) {
       const width = +svg.attr("width");
       const height = +svg.attr("height");
 
-      const radius = 2;
+      const radius = 3;
       const stroke = 1;
 			const fontSize = 14;
 			const minZoom = 0.8;
@@ -314,7 +370,7 @@ function getWebviewContent(theme: string) {
       let nodesData = ${JSON.stringify(nodes)};
 			let linksData = ${JSON.stringify(edges)};
 
-			console.log({ nodesData, linksData})
+			console.log(JSON.stringify({ nodesData, linksData}, null, 2));
 
       const onClick = (d) => {
         vscode.postMessage({ type: "click", payload: d });
@@ -407,8 +463,12 @@ function getWebviewContent(theme: string) {
 			function zoomActions() {
 				const scale = d3.event.transform;
 				g.attr("transform", scale);
-				const font = scale.k >= 1 ? fontSize / scale.k : fontSize
-				text.attr("font-size", \`\${font}px\`);
+				const font = scale.k >= 1 ? fontSize / scale.k : fontSize;
+        text.attr("font-size", \`\${font}px\`);
+        node.attr("font-size", \`\${font}px\`);
+        link.attr("stroke-width", scale.k >= 1 ? stroke / scale.k : stroke);
+        node.attr("r", scale.k >= 1 ? radius / scale.k : radius);
+        document.getElementById("zoom").innerHTML = \`\${scale.k.toFixed(2)}x\`;
 			}
 
       function restart() {
