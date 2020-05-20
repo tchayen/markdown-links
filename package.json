@@ -27,16 +27,6 @@
           "type": "string",
           "default": "one",
           "description": "- active – in the currently focused column.\n- beside – other than the current.\n- one (default), two, three, four, five, six, seven, eight, nine – respective editor columns."
-        },
-        "markdown-links.ignoreDirectories": {
-          "type": "string",
-          "default": "node_modules/",
-          "description": "Accepts regular expression supported by JavaScript."
-        },
-        "markdown-links.ignoreFiles": {
-          "type": "string",
-          "default": "",
-          "description": "Accepts regular expression supported by JavaScript."
         }
       }
     }
