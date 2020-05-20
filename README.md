@@ -39,10 +39,6 @@ Click on any filename to have it opened in the first column of the editor (or ot
 
 This extension contributes the following settings:
 
-### `markdown-links.theme`
-
-`light` (default) or `dark`.
-
 ### `markdown-links.column`
 
 - `active` – in the currently focused column.
