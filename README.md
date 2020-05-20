@@ -22,6 +22,20 @@ This extension contributes the following settings:
 
 Refer to the [CHANGELOG.md](CHANGELOG.md) file.
 
+## Roadmap
+
+This is early development version. I am currently considering:
+
+- automated tests
+- dark theme support (+ auto detecting system's dark/light mode)
+- zoom controls (`+` / `-` / `reset`)
+- handling external URLs
+- ignoring files or directories
+- some directory controls within the graph view (adding, removing files)
+- configurable simulation
+- better examples
+- optional autostart
+
 ## Contributing
 
 You are very welcome to open an issue or a pull request with changes.
