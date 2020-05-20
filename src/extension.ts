@@ -109,7 +109,7 @@ const filterNonExistingEdges = () => {
   edges = edges.filter((edge) => exists(edge.source) && exists(edge.target));
 };
 
-const settingToValue = {
+const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
   active: -1,
   beside: -2,
   one: 1,
@@ -212,14 +212,15 @@ const watch = (
 };
 
 export function activate(context: vscode.ExtensionContext) {
-  const { theme, column } = vscode.workspace.getConfiguration("markdown-links");
+  const { column } = vscode.workspace.getConfiguration("markdown-links");
+  const setting = settingToValue[column] || vscode.ViewColumn.One;
 
   context.subscriptions.push(
     vscode.commands.registerCommand("markdown-links.showGraph", async () => {
       const panel = vscode.window.createWebviewPanel(
         "markdownLinks",
         "Markdown Links",
-        settingToValue[column as any] as any,
+        setting,
         {
           enableScripts: true,
           retainContextWhenHidden: true,
@@ -227,7 +228,9 @@ export function activate(context: vscode.ExtensionContext) {
       );
 
       if (vscode.workspace.rootPath === undefined) {
-        // TODO: show vscode message.
+        vscode.window.showErrorMessage(
+          "This command can only be activated in open directory"
+        );
         return;
       }
 
@@ -252,291 +255,34 @@ export function activate(context: vscode.ExtensionContext) {
         )
       );
 
-      panel.webview.html = getWebviewContent(theme, nodes, edges, d3Uri);
+      panel.webview.html = await getWebviewContent(
+        context,
+        nodes,
+        edges,
+        d3Uri
+      );
 
       watch(context, panel);
     })
   );
 }
 
-function getWebviewContent(
-  theme: string,
+async function getWebviewContent(
+  context: vscode.ExtensionContext,
   nodes: Node[],
   edges: Edge[],
   d3Uri: vscode.Uri
 ) {
-  // TODO:
-  // Use theme setting to override the default value.
-  console.log("theme", theme);
+  const file = await vscode.workspace.fs.readFile(
+    vscode.Uri.file(path.join(context.extensionPath, "src", "webview.html"))
+  );
 
-  return `<!DOCTYPE html>
-	<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background-color: #fff;
-			}
+  const text = new TextDecoder("utf-8").decode(file);
 
-			.links line {
-				stroke: #ccc;
-			}
+  const filled = text
+    .replace("--REPLACE-WITH-D3-URI--", d3Uri.toString())
+    .replace("let nodesData = [];", `let nodesData = ${JSON.stringify(nodes)}`)
+    .replace("let linksData = [];", `let linksData = ${JSON.stringify(edges)}`);
 
-      .nodes circle {
-				cursor: pointer;
-				fill: #999;
-      }
-
-      .text text {
-				cursor: pointer;
-				fill: #000;
-			}
-
-			// .vscode-dark .links line {
-			// 	stroke: rgba(255, 255, 255, 0.2);
-			// }
-
-			// .vscode-dark .nodes circle {
-			// 	fill: #fff;
-			// }
-
-			// .vscode-dark .text text {
-			// 	fill: rgba(255, 255, 255, 0.8);
-      // }
-
-      .buttons {
-        position: absolute;
-        bottom: 0;
-        right: 0;
-        display: flex:
-        flex-direction: row;
-        margin: 16px;
-      }
-
-      button {
-        border: none;
-        border-radius: 4px;
-        background-color: #eee;
-        font-size: 13px;
-        font-weight: bold;
-        height: 24px;
-        line-height: 24px;
-        padding: 0 10px 0 10px;
-        cursor: pointer;
-      }
-
-      button:hover {
-        background-color: #ddd;
-      }
-
-      button:active {
-        background-color: #ccc;
-      }
-
-      button:focus {
-        outline: none;
-      }
-
-      span {
-        color: #666;
-      }
-    </style>
-    <script src="${d3Uri}"></script>
-  </head>
-  <body>
-   <div class="buttons">
-      <!--<button id="minus">-</button>
-      <button id="reset">Reset</button>
-      <button id="plus">+</button>-->
-      <span id="zoom">1.00x</span>
-    </div>
-    <script>
-      const vscode = acquireVsCodeApi();
-
-      const element = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg"
-      );
-      element.setAttribute("width", window.innerWidth);
-      element.setAttribute("height", window.innerHeight);
-      document.body.appendChild(element);
-
-      function reportWindowSize() {
-        element.setAttribute("width", window.innerWidth);
-        element.setAttribute("height", window.innerHeight);
-      }
-
-      window.onresize = reportWindowSize;
-
-      const svg = d3.select("svg");
-      const width = +svg.attr("width");
-      const height = +svg.attr("height");
-
-      const radius = 3;
-      const stroke = 1;
-			const fontSize = 14;
-			const minZoom = 0.8;
-      const maxZoom = 1.5;
-      const ticks = 300;
-
-      let nodesData = ${JSON.stringify(nodes)};
-			let linksData = ${JSON.stringify(edges)};
-
-			console.log(JSON.stringify({ nodesData, linksData}, null, 2));
-
-      const onClick = (d) => {
-        vscode.postMessage({ type: "click", payload: d });
-      };
-
-      const sameNodes = (previous, next) => {
-        if (next.length !== previous.length) {
-          return false;
-        }
-
-        const set = new Set();
-        for (const node of previous) {
-          set.add(node.path);
-        }
-
-        for (const node of next) {
-          if (!set.has(node.path)) {
-            return false;
-          }
-        }
-
-        return true;
-      }
-
-      const sameEdges = (previous, next) => {
-        if (next.length !== previous.length) {
-          return false;
-        }
-
-        const set = new Set();
-        for (const edge of previous) {
-          set.add(\`\${edge.source.path}-\${edge.target.path}\`);
-        }
-
-        for (const edge of next) {
-          if (!set.has(\`\${edge.source}-\${edge.target}\`)) {
-            return false;
-          }
-        }
-
-        return true;
-      }
-
-			window.addEventListener("message", (event) => {
-        const message = event.data;
-        switch (message.type) {
-          case "refresh":
-            const { nodes, edges } = message.payload;
-
-            if (sameNodes(nodesData, nodes) && sameEdges(linksData, edges)) {
-              return;
-            }
-
-						nodesData = nodes;
-						linksData = edges;
-						restart();
-            break;
-        }
-      });
-
-			const zoomHandler = d3.zoom()
-				.scaleExtent([0.2, 3])
-				//.translateExtent([[0,0], [width, height]])
-				//.extent([[0, 0], [width, height]])
-				.on("zoom", zoomActions);
-
-      zoomHandler(svg);
-
-      let simulation = d3
-        .forceSimulation(nodesData)
-        .force("charge", d3.forceManyBody().strength(-300))
-        .force(
-          "link",
-          d3
-            .forceLink(linksData)
-            .id((d) => d.path)
-            .distance(70)
-        )
-        .force("center", d3.forceCenter(width / 2, height / 2))
-        .on("tick", ticked)
-        .stop();
-
-      let g = svg.append("g");
-      let link = g.append("g").attr("class", "links").selectAll(".link");
-      let node = g.append("g").attr("class", "nodes").selectAll(".node");
-      let text = g.append("g").attr("class", "text").selectAll(".text");
-
-      restart();
-
-			function zoomActions() {
-				const scale = d3.event.transform;
-				g.attr("transform", scale);
-				const font = scale.k >= 1 ? fontSize / scale.k : fontSize;
-        text.attr("font-size", \`\${font}px\`);
-        node.attr("font-size", \`\${font}px\`);
-        link.attr("stroke-width", scale.k >= 1 ? stroke / scale.k : stroke);
-        node.attr("r", scale.k >= 1 ? radius / scale.k : radius);
-        document.getElementById("zoom").innerHTML = \`\${scale.k.toFixed(2)}x\`;
-			}
-
-      function restart() {
-        node = node.data(nodesData, (d) => d.path);
-        node.exit().remove();
-        node = node
-          .enter()
-          .append("circle")
-          .attr("r", radius)
-          .on("click", onClick)
-          .merge(node);
-
-        link = link.data(linksData, (d) => \`\${d.source.path}-\${d.target.path}\`);
-        link.exit().remove();
-        link = link
-          .enter()
-          .append("line")
-          .attr("stroke-width", stroke)
-          .merge(link);
-
-        text = text.data(nodesData, (d) => d.label);
-        text.exit().remove();
-        text = text
-          .enter()
-          .append("text")
-          .text((d) => d.label.replace(/_*/g, ""))
-          .attr("font-size", \`\${fontSize}px\`)
-          .on("click", onClick)
-          .merge(text);
-
-        simulation.nodes(nodesData);
-        simulation.force("link").links(linksData);
-        simulation.alpha(1).restart();
-        simulation.stop();
-
-        for (let i = 0; i < ticks; i++) {
-          simulation.tick();
-        }
-
-        ticked();
-      }
-
-      function ticked() {
-        node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
-        text.attr("x", (d) => d.x).attr("y", (d) => d.y);
-        link
-          .attr("x1", (d) => d.source.x)
-          .attr("y1", (d) => d.source.y)
-          .attr("x2", (d) => d.target.x)
-          .attr("y2", (d) => d.target.y);
-      }
-    </script>
-  </body>
-</html>
-	`;
+  return filled;
 }
