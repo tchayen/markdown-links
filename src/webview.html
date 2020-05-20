@@ -16,7 +16,7 @@
 
       .nodes circle {
         cursor: pointer;
-        fill: #999;
+        fill: #000;
       }
 
       .text text {
@@ -44,7 +44,7 @@
       <span id="zoom">1.00x</span>
     </div>
     <script>
-      const RADIUS = 3;
+      const RADIUS = 4;
       const STROKE = 1;
       const FONT_SIZE = 14;
       const TICKS = 300;
@@ -159,10 +159,9 @@
         zoomLevel = scale.k;
         g.attr("transform", scale);
 
-        const zoomOrKeep = (value) =>
-          scale.k >= 1 ? Math.round(Math.max(value / scale.k, 1)) : value;
+        const zoomOrKeep = (value) => (scale.k >= 1 ? value / scale.k : value);
 
-        const font = zoomOrKeep(FONT_SIZE);
+        const font = Math.max(Math.round(zoomOrKeep(FONT_SIZE)), 1);
 
         text.attr("font-size", `${font}px`);
         text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE));

@@ -5,10 +5,6 @@ import * as unified from "unified";
 import * as markdown from "remark-parse";
 import * as md5 from "md5";
 
-const fileName = `[A-z ]+`;
-const notHttp = `(?!http)`;
-const anythingButBracket = `[^\\)]+`;
-
 type Edge = {
   source: string;
   target: string;
