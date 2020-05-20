@@ -1,39 +1,12 @@
 # Markdown Links
 
-Adds command `Show Graph` that displays a graph of links between files in the current working directory.
+Adds command `Show Graph` that displays a graph of local links between markdown files in the current working directory.
 
-## Example usage
+![Demo GIF](demo.gif)
 
-Let's say you have a directory with three files:
+## Examples
 
-**./one.md**
-
-```md
-# One
-
-[Second](second.md)
-```
-
-**./2.md**
-
-```md
-# Two
-
-[One](one.md)
-[Three](three.md)
-```
-
-**./three.md**
-
-```md
-# Third one
-
-Only text.
-```
-
-If you press `Shift+CMD+P` and type `Show Graph`, a new tab will open with the graph view.
-
-Click on any filename to have it opened in the first column of the editor (or other if configured in settings).
+You can open any example in the `examples` directory and try yourself by pressing `CMD/CTRL + P` and selecting `Show Graph`.
 
 ## Settings
 
@@ -43,16 +16,12 @@ This extension contributes the following settings:
 
 - `active` – in the currently focused column.
 - `beside` – other than the current.
-- `one` (default), `two`, `three`, `four`, `five`, `six`, `seven`, `eight`, `nine` – respective editor columns.
-
-### `markdown-links.ignoreDirectories`
-
-Accepts regular expression supported by JavaScript.
-
-### `markdown-links.ignoreFiles`
-
-Accepts regular expression supported by JavaScript.
+- `one` (**default**), `two`, `three`, `four`, `five`, `six`, `seven`, `eight`, `nine` – respective editor columns.
 
 ## Changelog
 
 Refer to the [CHANGELOG.md](CHANGELOG.md) file.
+
+## Contributing
+
+You are very welcome to open an issue or a pull request with changes.
