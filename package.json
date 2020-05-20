@@ -23,11 +23,6 @@
     "configuration": {
       "title": "Markdown Links",
       "properties": {
-        "markdown-links.theme": {
-          "type": "string",
-          "default": "",
-          "description": "Either light, dark or empty string (defaults to editor's preference)."
-        },
         "markdown-links.column": {
           "type": "string",
           "default": "one",
