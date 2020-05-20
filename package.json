@@ -3,12 +3,24 @@
   "displayName": "Markdown Links",
   "description": "Adds command - Show Graph - that displays a graph of local links between markdown files in the current working directory",
   "version": "0.1.0",
+  "publisher": "tchayen",
   "engines": {
     "vscode": "^1.45.0"
   },
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "markdown"
+  ],
+  "bugs": {
+    "url": "https://github.com/tchayen/markdown-links/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tchayen/markdown-links"
+  },
+  "license": "MIT",
   "activationEvents": [
     "onCommand:markdown-links.showGraph"
   ],
@@ -52,7 +64,6 @@
     "typescript": "^3.8.3",
     "vscode-test": "^1.3.0"
   },
-  "license": "MIT",
   "dependencies": {
     "@types/md5": "^2.2.0",
     "d3": "4",
