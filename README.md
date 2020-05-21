@@ -4,6 +4,10 @@ Adds command `Show Graph` that displays a graph of local links between markdown 
 
 ![Demo GIF](demo.gif)
 
+## Workflow
+
+Recommended workflow is either keeping the graph open and using it as an alternative to the explorer sidebar or checking the it from time to time.
+
 The graph refreshes automatically every time you:
 
 - Update a markdown title of the file
@@ -11,9 +15,27 @@ The graph refreshes automatically every time you:
 - Create a new file and add give it a title
 - Remove a file
 
-Recommended workflow is either keeping the graph open and using it as an alternative to the explorer sidebar or checking the it from time to time.
+Title is always the first markdown heading of depth 1, i.e. `# Title`.
 
-## Examples
+Any link or reference to a local file causes the extension to attempt parsing it. The title is required but links are optional (it results in a lone node with no edges).
+
+### Example file
+
+```md
+# Title
+
+Link can be present in [text](first.md) or on a special list.
+
+## Linked
+
+- [Second](./2.md)
+
+Named reference can also be used, like this: [Reference].
+
+[reference]: ref.md
+```
+
+### More examples
 
 You can open any example in the `examples` directory and try yourself by pressing `SHIFT+CMD+P` (or `SHIFT+CTRL+P`) and selecting `Show Graph`.
 
