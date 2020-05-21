@@ -237,18 +237,8 @@ export function activate(context: vscode.ExtensionContext) {
       await parseDirectory(vscode.workspace.rootPath);
       filterNonExistingEdges();
 
-      // /Users/tchayen/lab/markdown-links/node_modules/d3/build/d3.min.js
-
       const d3Uri = panel.webview.asWebviewUri(
-        vscode.Uri.file(
-          path.join(
-            context.extensionPath,
-            "node_modules",
-            "d3",
-            "build",
-            "d3.min.js"
-          )
-        )
+        vscode.Uri.file(path.join(context.extensionPath, "static", "d3.min.js"))
       );
 
       panel.webview.html = await getWebviewContent(
@@ -269,9 +259,10 @@ async function getWebviewContent(
   edges: Edge[],
   d3Uri: vscode.Uri
 ) {
-  const file = await vscode.workspace.fs.readFile(
-    vscode.Uri.file(path.join(context.extensionPath, "webview.html"))
+  const webviewPath = vscode.Uri.file(
+    path.join(context.extensionPath, "static", "webview.html")
   );
+  const file = await vscode.workspace.fs.readFile(webviewPath);
 
   const text = new TextDecoder("utf-8").decode(file);
 
