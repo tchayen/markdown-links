@@ -48,7 +48,7 @@
     "webpack": "webpack --mode development",
     "webpack-dev": "webpack --mode development --watch",
     "test-compile": "tsc -p ./",
-    "compile": "tsc -p ./",
+    "compile": "webpack --mode production",
     "lint": "eslint src --ext ts",
     "watch": "tsc -watch -p ./",
     "pretest": "yarn run compile && yarn run lint",
