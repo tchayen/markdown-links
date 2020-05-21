@@ -39,3 +39,5 @@ This is early development version. I am currently considering:
 ## Contributing
 
 You are very welcome to open an issue or a pull request with changes.
+
+If it is your first time with vscode extension, make sure to checkout [Official Guides](https://code.visualstudio.com/api/get-started/your-first-extension).
