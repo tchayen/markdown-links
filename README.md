@@ -10,16 +10,23 @@ Recommended workflow is either keeping the graph open and using it as an alterna
 
 The graph refreshes automatically every time you:
 
-- Update a markdown title of the file
-- Change links to other files
-- Create a new file and add give it a title
-- Remove a file
+- Update a markdown title of the file.
+- Change links to other files.
+- Create a new file and add give it a title.
+- Remove a file.
 
-Title is always the first markdown heading of depth 1, i.e. `# Title`.
+## Concepts
 
-Any link or reference to a local file causes the extension to attempt parsing it. The title is required but links are optional (it results in a lone node with no edges).
+- Title is always the first markdown heading of depth 1, i.e. `# Title`.
+- Any link or reference to a local file causes the extension to attempt parsing it. The title is required but links are optional (it results in a lone node with no edges in such case).
+- Graph is not directed. It doesn't show which file has the link and which one is linked.
+- Directory structure is not relevant for the graph. All that matters is the mutual links between files.
 
-### Example file
+## Examples
+
+Here are some examples to better explain the above.
+
+### Basic file
 
 ```md
 # Title
@@ -35,7 +42,7 @@ Named reference can also be used, like this: [Reference].
 [reference]: ref.md
 ```
 
-### More examples
+### More
 
 You can open any example in the `examples` directory and try yourself by pressing `SHIFT+CMD+P` (or `SHIFT+CTRL+P`) and selecting `Show Graph`.
 
@@ -49,25 +56,26 @@ This extension contributes the following settings:
 - `beside` – other than the current.
 - `one` (**default**), `two`, `three`, `four`, `five`, `six`, `seven`, `eight`, `nine` – respective editor columns.
 
-## Changelog
-
-Refer to the [CHANGELOG.md](CHANGELOG.md) file.
-
 ## Roadmap
 
 This is early development version. I am currently considering:
 
-- [x] Main `Show Graph` command
-- [x] Setting for choosing column for opening files
-- [ ] Automated tests
-- [ ] Dark theme support (+ auto detecting system's dark/light mode)
-- [ ] Zoom controls (`+` / `-` / `reset`)
-- [ ] Handling external URLs
-- [ ] Ignoring files or directories
-- [ ] Some directory controls within the graph view (adding, removing files)
-- [ ] Configurable simulation
-- [ ] Better examples
-- [ ] Optional autostart
+- [x] Main `Show Graph` command.
+- [x] Setting for choosing column for opening files.
+- [ ] Automated tests.
+- [ ] Dark theme support (+ auto detecting system's dark/light mode).
+- [ ] Zoom controls (`+` / `-` / `reset`).
+- [ ] Handling external URLs.
+- [ ] Ignoring files or directories.
+- [ ] Some directory controls within the graph view (adding, removing files).
+- [ ] Configurable simulation.
+- [ ] Optional display of edge directions.
+- [ ] Better examples.
+- [ ] Optional autostart.
+
+## Changelog
+
+Refer to the [CHANGELOG.md](CHANGELOG.md) file.
 
 ## Contributing
 
