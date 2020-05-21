@@ -2,9 +2,10 @@
 .vscode-test/**
 out/test/**
 src/**
+examples/**
 .gitignore
-vsc-extension-quickstart.md
 **/tsconfig.json
 **/.eslintrc.json
 **/*.map
 **/*.ts
+**/*.gif
