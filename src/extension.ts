@@ -270,7 +270,7 @@ async function getWebviewContent(
   d3Uri: vscode.Uri
 ) {
   const file = await vscode.workspace.fs.readFile(
-    vscode.Uri.file(path.join(context.extensionPath, "src", "webview.html"))
+    vscode.Uri.file(path.join(context.extensionPath, "webview.html"))
   );
 
   const text = new TextDecoder("utf-8").decode(file);
