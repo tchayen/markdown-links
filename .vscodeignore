@@ -1,5 +1,6 @@
 .vscode/**
 .vscode-test/**
+node_modules/**
 out/test/**
 src/**
 examples/**
@@ -9,3 +10,4 @@ examples/**
 **/*.map
 **/*.ts
 **/*.gif
+webpack.config.js
