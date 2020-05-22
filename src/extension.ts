@@ -116,14 +116,14 @@ const parseFile = async (filePath: string) => {
   }
 
   // remove edges based on an old version of this file
-  edges = edges.filter((edge) => edge.source !== filePath);
+  edges = edges.filter((edge) => edge.source !== id(filePath));
 
   const links = findLinks(ast);
+  const parentDirectory = filePath.split("/").slice(0, -1).join("/");
 
   for (const link of links) {
     let target = link;
     if (!path.isAbsolute(link)) {
-      const parentDirectory = filePath.split("/").slice(0, -1).join("/");
       target = path.normalize(`${parentDirectory}/${link}`);
     }
 
