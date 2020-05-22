@@ -81,22 +81,35 @@ const parseFile = async (source: string) => {
       `${source.split("/").slice(0, -1).join("/")}/${link}`
     );
 
+    console.log({ source, target });
+
     edges.push({ source, target });
   }
 };
 
-const parseDirectory = async (filePath: string) => {
+const parseDirectory = async (directory: string) => {
   const files = await vscode.workspace.fs.readDirectory(
-    vscode.Uri.file(filePath)
+    vscode.Uri.file(directory)
   );
 
+  const promises = [];
+
   for (const file of files) {
-    if (file[1] === vscode.FileType.Directory && !file[0].startsWith(".")) {
-      await parseDirectory(`${filePath}/${file[0]}`);
-    } else if (file[1] === vscode.FileType.File && file[0].endsWith(".md")) {
-      await parseFile(`${filePath}/${file[0]}`);
+    const fileName = file[0];
+    const fileType = file[1];
+    const isDirectory = fileType === vscode.FileType.Directory;
+    const isFile = fileType === vscode.FileType.File;
+    const hiddenFile = fileName.startsWith(".");
+    const markdownFile = fileName.endsWith(".md");
+
+    if (isDirectory && !hiddenFile) {
+      promises.push(parseDirectory(`${directory}/${fileName}`));
+    } else if (isFile && markdownFile) {
+      promises.push(parseFile(`${directory}/${fileName}`));
     }
   }
+
+  await Promise.all(promises);
 };
 
 const exists = (path: string) => !!nodes.find((node) => node.path === path);
