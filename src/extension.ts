@@ -15,6 +15,9 @@ type Node = {
   label: string;
 };
 
+// the first capturing group must return the id
+const ID_REGEX = /(?:^|[^[])(\d{4}-\d{2}-\d{2}N\d+)/m;
+
 let nodes: Node[] = [];
 let edges: Edge[] = [];
 let idToPath: Record<string, string> = {};
@@ -83,9 +86,26 @@ const parseFile = async (filePath: string) => {
       `${filePath.split("/").slice(0, -1).join("/")}/${link}`
     );
 
-    console.log({ path: filePath, target });
-
     edges.push({ source: filePath, target });
+  }
+};
+
+const findFileId = async (filePath: string): Promise<string | null> => {
+  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
+  const content = new TextDecoder("utf-8").decode(buffer);
+
+  const match = content.match(ID_REGEX);
+  if (match) {
+    return match[1];
+  } else {
+    return null;
+  }
+};
+
+const parseForId = async (filePath: string) => {
+  const id = await findFileId(filePath);
+  if (id !== null) {
+    idToPath[id] = filePath;
   }
 };
 
@@ -115,6 +135,10 @@ const parseDirectory = async (
   }
 
   await Promise.all(promises);
+};
+
+const parseDirectoryForIds = async (directory: string) => {
+  return await parseDirectory(directory, parseForId);
 };
 
 const parseDirectoryForLinks = async (directory: string) => {
@@ -256,6 +280,7 @@ export function activate(context: vscode.ExtensionContext) {
       nodes = [];
       edges = [];
 
+      await parseDirectoryForIds(vscode.workspace.rootPath);
       await parseDirectoryForLinks(vscode.workspace.rootPath);
       filterNonExistingEdges();
 
