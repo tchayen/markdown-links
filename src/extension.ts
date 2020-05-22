@@ -18,15 +18,6 @@ type Node = {
   label: string;
 };
 
-// the first capturing group must return the id
-const ID_REGEX = /(?:^|[^[])(\d{4}-\d{2}-\d{2}N\d+)/m;
-
-const id = (path: string): string => md5(path);
-
-let nodes: Node[] = [];
-let edges: Edge[] = [];
-let idToPath: Record<string, string> = {};
-
 type MarkdownNode = {
   type: string;
   children?: MarkdownNode[];
@@ -37,6 +28,27 @@ type MarkdownNode = {
     permalink?: string;
   };
 };
+
+let nodes: Node[] = [];
+let edges: Edge[] = [];
+let idToPath: Record<string, string> = {};
+
+const id = (path: string): string => md5(path);
+
+const getConfiguration = (key: string) =>
+  vscode.workspace.getConfiguration("markdown-links")[key];
+
+const getFileIdRegexp = () => {
+  const DEFAULT_VALUE = "\\d{14}";
+  const userValue = getConfiguration("fileIdRegexp") || DEFAULT_VALUE;
+
+  // ensure the id is not preceeded by [[, which would make it a part of
+  // wiki-style link, and put the user-supplied regex in a capturing group to
+  // retrieve matching string
+  return new RegExp(`(?<!\\[\\[)(${userValue})`);
+};
+
+const FILE_ID_REGEXP = getFileIdRegexp();
 
 const findLinks = (ast: MarkdownNode): string[] => {
   if (ast.type === "link" || ast.type === "definition") {
@@ -135,7 +147,7 @@ const findFileId = async (filePath: string): Promise<string | null> => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
 
-  const match = content.match(ID_REGEX);
+  const match = content.match(FILE_ID_REGEXP);
   return match ? match[1] : null;
 };
 
@@ -195,7 +207,7 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
 };
 
 const getColumnSetting = (key: string) => {
-  const column = vscode.workspace.getConfiguration("markdown-links")[key];
+  const column = getConfiguration(key);
   return settingToValue[column] || vscode.ViewColumn.One;
 };
 
