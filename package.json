@@ -35,7 +35,12 @@
     "configuration": {
       "title": "Markdown Links",
       "properties": {
-        "markdown-links.column": {
+        "markdown-links.showColumn": {
+          "type": "string",
+          "default": "beside",
+          "description": "- active – in the currently focused column.\n- beside – (default) other than the current.\n- one, two, three, four, five, six, seven, eight, nine – respective editor columns."
+        },
+        "markdown-links.openColumn": {
           "type": "string",
           "default": "one",
           "description": "- active – in the currently focused column.\n- beside – other than the current.\n- one (default), two, three, four, five, six, seven, eight, nine – respective editor columns."

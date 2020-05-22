@@ -132,6 +132,11 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
   nine: 9,
 };
 
+const getColumnSetting = (key: string) => {
+  const column = vscode.workspace.getConfiguration("markdown-links")[key];
+  return settingToValue[column] || vscode.ViewColumn.One;
+};
+
 const watch = (
   context: vscode.ExtensionContext,
   panel: vscode.WebviewPanel
@@ -204,10 +209,12 @@ const watch = (
 
   panel.webview.onDidReceiveMessage(
     (message) => {
-      if (message.type) {
+      if (message.type === "click") {
         const openPath = vscode.Uri.file(message.payload.path);
+        const column = getColumnSetting("openColumn");
+
         vscode.workspace.openTextDocument(openPath).then((doc) => {
-          vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+          vscode.window.showTextDocument(doc, column);
         });
       }
     },
@@ -221,15 +228,14 @@ const watch = (
 };
 
 export function activate(context: vscode.ExtensionContext) {
-  const { column } = vscode.workspace.getConfiguration("markdown-links");
-  const setting = settingToValue[column] || vscode.ViewColumn.One;
-
   context.subscriptions.push(
     vscode.commands.registerCommand("markdown-links.showGraph", async () => {
+      const column = getColumnSetting("showColumn");
+
       const panel = vscode.window.createWebviewPanel(
         "markdownLinks",
         "Markdown Links",
-        setting,
+        column,
         {
           enableScripts: true,
           retainContextWhenHidden: true,

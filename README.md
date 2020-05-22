@@ -50,7 +50,15 @@ You can open any example in the `examples` directory and try yourself by pressin
 
 This extension contributes the following settings:
 
-### `markdown-links.column`
+### `markdown-links.showColumn`
+
+Controls in which column should the graph appear. Refer to [Column values](###column-values). Defaults to `beside`.
+
+### `markdown-links.openColumn`
+
+Controls in which column should clicked files open. Refer to [Column values](###column-values). Defaults to `one`.
+
+### Column values
 
 - `active` – in the currently focused column.
 - `beside` – other than the current.
