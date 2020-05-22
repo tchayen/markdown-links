@@ -1,3 +1,0 @@
-# Chain
-
-[More](more.md)
