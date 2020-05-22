@@ -4,6 +4,7 @@ import * as path from "path";
 import * as unified from "unified";
 import * as markdown from "remark-parse";
 import * as md5 from "md5";
+import * as wikiLinkPlugin from "remark-wiki-link";
 
 type Edge = {
   source: string;
@@ -28,11 +29,17 @@ type MarkdownNode = {
   url?: string;
   value?: string;
   depth?: number;
+  data?: {
+    permalink?: string;
+  };
 };
 
 const findLinks = (ast: MarkdownNode): string[] => {
   if (ast.type === "link" || ast.type === "definition") {
     return [ast.url!];
+  }
+  if (ast.type === "wikiLink") {
+    return [ast.data!.permalink!];
   }
 
   const links: string[] = [];
@@ -48,12 +55,24 @@ const findLinks = (ast: MarkdownNode): string[] => {
   return links;
 };
 
+const idResolver = (id: string): string[] => {
+  const filePath = idToPath[id];
+  if (filePath === undefined) {
+    return [id];
+  } else {
+    return [filePath];
+  }
+};
+
 const parseFile = async (filePath: string) => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
-  const ast: MarkdownNode = unified().use(markdown).parse(content);
+  const ast: MarkdownNode = unified()
+    .use(markdown)
+    .use(wikiLinkPlugin, { pageResolver: idResolver })
+    .parse(content);
 
-  let title = null;
+  let title: string | null = null;
   if (
     ast.children &&
     ast.children.length > 0 &&
@@ -82,9 +101,12 @@ const parseFile = async (filePath: string) => {
   const links = findLinks(ast);
 
   for (const link of links) {
-    const target = path.normalize(
-      `${filePath.split("/").slice(0, -1).join("/")}/${link}`
-    );
+    let target = link;
+    if (!path.isAbsolute(link)) {
+      target = path.normalize(
+        `${filePath.split("/").slice(0, -1).join("/")}/${link}`
+      );
+    }
 
     edges.push({ source: filePath, target });
   }
@@ -117,7 +139,7 @@ const parseDirectory = async (
     vscode.Uri.file(directory)
   );
 
-  const promises = [];
+  const promises: Promise<void>[] = [];
 
   for (const file of files) {
     const fileName = file[0];
