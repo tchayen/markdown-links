@@ -139,7 +139,7 @@ const findFileId = async (filePath: string): Promise<string | null> => {
   return match ? match[1] : null;
 };
 
-const parseForId = async (filePath: string) => {
+const learnFileId = async (filePath: string) => {
   const id = await findFileId(filePath);
   if (id !== null) {
     idToPath[id] = filePath;
@@ -172,14 +172,6 @@ const parseDirectory = async (
   }
 
   await Promise.all(promises);
-};
-
-const parseDirectoryForIds = async (directory: string) => {
-  return await parseDirectory(directory, parseForId);
-};
-
-const parseDirectoryForLinks = async (directory: string) => {
-  return await parseDirectory(directory, parseFile);
 };
 
 const exists = (id: string) => !!nodes.find((node) => node.id === id);
@@ -323,8 +315,8 @@ export function activate(context: vscode.ExtensionContext) {
       nodes = [];
       edges = [];
 
-      await parseDirectoryForIds(vscode.workspace.rootPath);
-      await parseDirectoryForLinks(vscode.workspace.rootPath);
+      await parseDirectory(vscode.workspace.rootPath, learnFileId);
+      await parseDirectory(vscode.workspace.rootPath, parseFile);
       filterNonExistingEdges();
 
       const d3Uri = panel.webview.asWebviewUri(
