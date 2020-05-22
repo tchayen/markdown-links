@@ -18,12 +18,12 @@ The graph refreshes automatically every time you:
 ## Concepts
 
 - Title is always the first markdown heading of depth 1, i.e. `# Title`.
-- Files which do not have a title do not appear in the graph
-- Files can link to other files usin path-based or ID-based links
+- Files which do not have a title do not appear in the graph.
+- Files can link to other files using local Markdown links or ID-based links.
 - The graph is not directed. It doesn't show which file has the link and which one is linked.
 - Directory structure is not relevant for the graph. All that matters is the mutual links between files.
 
-### Path-based links
+### Local Markdown links
 
 Regular markdown links syntax with a relative or absolute file. For example: `[link name](./other-file-in-this-dir.md)`.
 

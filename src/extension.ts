@@ -42,9 +42,9 @@ const getFileIdRegexp = () => {
   const DEFAULT_VALUE = "\\d{14}";
   const userValue = getConfiguration("fileIdRegexp") || DEFAULT_VALUE;
 
-  // ensure the id is not preceeded by [[, which would make it a part of
+  // Ensure the id is not preceeded by [[, which would make it a part of
   // wiki-style link, and put the user-supplied regex in a capturing group to
-  // retrieve matching string
+  // retrieve matching string.
   return new RegExp(`(?<!\\[\\[)(${userValue})`);
 };
 
