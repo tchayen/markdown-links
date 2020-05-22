@@ -11,9 +11,12 @@ type Edge = {
 };
 
 type Node = {
+  id: string;
   path: string;
   label: string;
 };
+
+const id = (path: string): string => md5(path);
 
 let nodes: Node[] = [];
 let edges: Edge[] = [];
@@ -69,11 +72,10 @@ const parseFile = async (source: string) => {
   if (index !== -1) {
     nodes[index].label = title;
   } else {
-    nodes.push({ path: source, label: title });
+    nodes.push({ id: id(source), path: source, label: title });
   }
 
-  edges = edges.filter((edge) => edge.source !== source);
-
+  edges = edges.filter((edge) => edge.source !== id(source));
   const links = findLinks(ast);
 
   for (const link of links) {
@@ -81,9 +83,7 @@ const parseFile = async (source: string) => {
       `${source.split("/").slice(0, -1).join("/")}/${link}`
     );
 
-    console.log({ source, target });
-
-    edges.push({ source, target });
+    edges.push({ source: id(source), target: id(target) });
   }
 };
 
@@ -112,7 +112,7 @@ const parseDirectory = async (directory: string) => {
   await Promise.all(promises);
 };
 
-const exists = (path: string) => !!nodes.find((node) => node.path === path);
+const exists = (id: string) => !!nodes.find((node) => node.id === id);
 
 const filterNonExistingEdges = () => {
   edges = edges.filter((edge) => exists(edge.source) && exists(edge.target));
