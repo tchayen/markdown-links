@@ -4,6 +4,7 @@ import * as path from "path";
 import * as unified from "unified";
 import * as markdown from "remark-parse";
 import * as wikiLinkPlugin from "remark-wiki-link";
+import * as frontmatter from "remark-frontmatter";
 import * as md5 from "md5";
 
 type Edge = {
@@ -18,6 +19,8 @@ type Node = {
 };
 
 const id = (path: string): string => md5(path);
+
+const parser = unified().use(markdown).use(wikiLinkPlugin).use(frontmatter);
 
 let nodes: Node[] = [];
 let edges: Edge[] = [];
@@ -51,10 +54,13 @@ const findLinks = (ast: MarkdownNode): string[] => {
 const parseFile = async (source: string) => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(source));
   const content = new TextDecoder("utf-8").decode(buffer);
-  const ast: MarkdownNode = unified()
-    .use(markdown)
-    .use(wikiLinkPlugin)
-    .parse(content);
+  const ast: MarkdownNode = parser.parse(content);
+
+  console.log(source, ast);
+
+  // TODO:
+  // - parse that YAML
+  // - wiki links?
 
   let title: string | null = null;
   if (
