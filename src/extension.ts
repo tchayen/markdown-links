@@ -79,9 +79,8 @@ const parseFile = async (source: string) => {
   const links = findLinks(ast);
 
   for (const link of links) {
-    const target = path.normalize(
-      `${source.split("/").slice(0, -1).join("/")}/${link}`
-    );
+    const parentDirectory = source.split("/").slice(0, -1).join("/");
+    const target = path.normalize(`${parentDirectory}/${link}`);
 
     edges.push({ source: id(source), target: id(target) });
   }
