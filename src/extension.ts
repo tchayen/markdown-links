@@ -59,6 +59,24 @@ const findLinks = (ast: MarkdownNode): string[] => {
   return links;
 };
 
+const findTitle = (ast: MarkdownNode): string | null => {
+  if (!ast.children) {
+    return null;
+  }
+
+  for (const child of ast.children) {
+    if (
+      child.type === "heading" &&
+      child.depth === 1 &&
+      child.children &&
+      child.children.length > 0
+    ) {
+      return child.children[0].value!;
+    }
+  }
+  return null;
+};
+
 const idResolver = (id: string): string[] => {
   const filePath = idToPath[id];
   if (filePath === undefined) {
@@ -67,7 +85,6 @@ const idResolver = (id: string): string[] => {
     return [filePath];
   }
 };
-
 const parser = unified()
   .use(markdown)
   .use(wikiLinkPlugin, { pageResolver: idResolver })
@@ -84,17 +101,7 @@ const parseFile = async (filePath: string) => {
   // - parse that YAML
   // - wiki links?
 
-  let title: string | null = null;
-  if (
-    ast.children &&
-    ast.children.length > 0 &&
-    ast.children[0].type === "heading" &&
-    ast.children[0].depth === 1 &&
-    ast.children[0].children &&
-    ast.children[0].children.length > 0
-  ) {
-    title = ast.children[0].children[0].value!;
-  }
+  let title: string | null = findTitle(ast);
 
   if (!title) {
     return;
