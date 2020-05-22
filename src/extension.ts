@@ -3,8 +3,9 @@ import { TextDecoder } from "util";
 import * as path from "path";
 import * as unified from "unified";
 import * as markdown from "remark-parse";
-import * as md5 from "md5";
 import * as wikiLinkPlugin from "remark-wiki-link";
+import * as frontmatter from "remark-frontmatter";
+import * as md5 from "md5";
 
 type Edge = {
   source: string;
@@ -12,12 +13,15 @@ type Edge = {
 };
 
 type Node = {
+  id: string;
   path: string;
   label: string;
 };
 
 // the first capturing group must return the id
 const ID_REGEX = /(?:^|[^[])(\d{4}-\d{2}-\d{2}N\d+)/m;
+
+const id = (path: string): string => md5(path);
 
 let nodes: Node[] = [];
 let edges: Edge[] = [];
@@ -64,13 +68,21 @@ const idResolver = (id: string): string[] => {
   }
 };
 
+const parser = unified()
+  .use(markdown)
+  .use(wikiLinkPlugin, { pageResolver: idResolver })
+  .use(frontmatter);
+
 const parseFile = async (filePath: string) => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
-  const ast: MarkdownNode = unified()
-    .use(markdown)
-    .use(wikiLinkPlugin, { pageResolver: idResolver })
-    .parse(content);
+  const ast: MarkdownNode = parser.parse(content);
+
+  console.log(filePath, ast);
+
+  // TODO:
+  // - parse that YAML
+  // - wiki links?
 
   let title: string | null = null;
   if (
@@ -92,7 +104,7 @@ const parseFile = async (filePath: string) => {
   if (index !== -1) {
     nodes[index].label = title;
   } else {
-    nodes.push({ path: filePath, label: title });
+    nodes.push({ id: id(filePath), path: filePath, label: title });
   }
 
   // remove edges based on an old version of this file
@@ -103,12 +115,11 @@ const parseFile = async (filePath: string) => {
   for (const link of links) {
     let target = link;
     if (!path.isAbsolute(link)) {
-      target = path.normalize(
-        `${filePath.split("/").slice(0, -1).join("/")}/${link}`
-      );
+      const parentDirectory = filePath.split("/").slice(0, -1).join("/");
+      target = path.normalize(`${parentDirectory}/${link}`);
     }
 
-    edges.push({ source: filePath, target });
+    edges.push({ source: id(filePath), target: id(target) });
   }
 };
 
@@ -167,7 +178,7 @@ const parseDirectoryForLinks = async (directory: string) => {
   return await parseDirectory(directory, parseFile);
 };
 
-const exists = (path: string) => !!nodes.find((node) => node.path === path);
+const exists = (id: string) => !!nodes.find((node) => node.id === id);
 
 const filterNonExistingEdges = () => {
   edges = edges.filter((edge) => exists(edge.source) && exists(edge.target));
@@ -185,6 +196,11 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
   seven: 7,
   eight: 8,
   nine: 9,
+};
+
+const getColumnSetting = (key: string) => {
+  const column = vscode.workspace.getConfiguration("markdown-links")[key];
+  return settingToValue[column] || vscode.ViewColumn.One;
 };
 
 const watch = (
@@ -259,10 +275,12 @@ const watch = (
 
   panel.webview.onDidReceiveMessage(
     (message) => {
-      if (message.type) {
+      if (message.type === "click") {
         const openPath = vscode.Uri.file(message.payload.path);
+        const column = getColumnSetting("openColumn");
+
         vscode.workspace.openTextDocument(openPath).then((doc) => {
-          vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+          vscode.window.showTextDocument(doc, column);
         });
       }
     },
@@ -276,15 +294,14 @@ const watch = (
 };
 
 export function activate(context: vscode.ExtensionContext) {
-  const { column } = vscode.workspace.getConfiguration("markdown-links");
-  const setting = settingToValue[column] || vscode.ViewColumn.One;
-
   context.subscriptions.push(
     vscode.commands.registerCommand("markdown-links.showGraph", async () => {
+      const column = getColumnSetting("showColumn");
+
       const panel = vscode.window.createWebviewPanel(
         "markdownLinks",
         "Markdown Links",
-        setting,
+        column,
         {
           enableScripts: true,
           retainContextWhenHidden: true,

@@ -66,11 +66,11 @@
 
         const map = new Map();
         for (const node of previous) {
-          map.set(node.path, node.label);
+          map.set(node.id, node.label);
         }
 
         for (const node of next) {
-          const found = map.get(node.path);
+          const found = map.get(node.id);
           if (!found || found !== node.title) {
             return false;
           }
@@ -86,7 +86,7 @@
 
         const set = new Set();
         for (const edge of previous) {
-          set.add(`${edge.source.path}-${edge.target.path}`);
+          set.add(`${edge.source.id}-${edge.target.id}`);
         }
 
         for (const edge of next) {
@@ -144,7 +144,7 @@
           "link",
           d3
             .forceLink(linksData)
-            .id((d) => d.path)
+            .id((d) => d.id)
             .distance(70)
         )
         .force("center", d3.forceCenter(width / 2, height / 2))
@@ -185,7 +185,7 @@
       };
 
       const restart = () => {
-        node = node.data(nodesData, (d) => d.path);
+        node = node.data(nodesData, (d) => d.id);
         node.exit().remove();
         node = node
           .enter()
@@ -194,7 +194,7 @@
           .on("click", onClick)
           .merge(node);
 
-        link = link.data(linksData, (d) => `${d.source.path}-${d.target.path}`);
+        link = link.data(linksData, (d) => `${d.source.id}-${d.target.id}`);
         link.exit().remove();
         link = link
           .enter()

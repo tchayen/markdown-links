@@ -2,7 +2,7 @@
   "name": "markdown-links",
   "displayName": "Markdown Links",
   "description": "Adds command - Show Graph - that displays a graph of local links between markdown files in the current working directory.",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "publisher": "tchayen",
   "engines": {
     "vscode": "^1.45.0"
@@ -35,7 +35,12 @@
     "configuration": {
       "title": "Markdown Links",
       "properties": {
-        "markdown-links.column": {
+        "markdown-links.showColumn": {
+          "type": "string",
+          "default": "beside",
+          "description": "- active – in the currently focused column.\n- beside – (default) other than the current.\n- one, two, three, four, five, six, seven, eight, nine – respective editor columns."
+        },
+        "markdown-links.openColumn": {
           "type": "string",
           "default": "one",
           "description": "- active – in the currently focused column.\n- beside – other than the current.\n- one (default), two, three, four, five, six, seven, eight, nine – respective editor columns."
@@ -73,8 +78,9 @@
   "dependencies": {
     "@types/md5": "^2.2.0",
     "md5": "^2.2.1",
+    "remark-frontmatter": "^2.0.0",
     "remark-parse": "^8.0.2",
-    "remark-wiki-link": "0.0.4",
+    "remark-wiki-link": "^0.0.4",
     "unified": "^9.0.0"
   }
 }
