@@ -44,8 +44,8 @@ const findLinks = (ast: MarkdownNode): string[] => {
   return links;
 };
 
-const parseFile = async (source: string) => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(source));
+const parseFile = async (filePath: string) => {
+  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
   const ast: MarkdownNode = unified().use(markdown).parse(content);
 
@@ -65,25 +65,25 @@ const parseFile = async (source: string) => {
     return;
   }
 
-  const index = nodes.findIndex((node) => node.path === source);
+  const index = nodes.findIndex((node) => node.path === filePath);
   if (index !== -1) {
     nodes[index].label = title;
   } else {
-    nodes.push({ path: source, label: title });
+    nodes.push({ path: filePath, label: title });
   }
 
-  edges = edges.filter((edge) => edge.source !== source);
+  edges = edges.filter((edge) => edge.source !== filePath);
 
   const links = findLinks(ast);
 
   for (const link of links) {
     const target = path.normalize(
-      `${source.split("/").slice(0, -1).join("/")}/${link}`
+      `${filePath.split("/").slice(0, -1).join("/")}/${link}`
     );
 
-    console.log({ source, target });
+    console.log({ path: filePath, target });
 
-    edges.push({ source, target });
+    edges.push({ source: filePath, target });
   }
 };
 
