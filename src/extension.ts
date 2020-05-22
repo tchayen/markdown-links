@@ -17,6 +17,7 @@ type Node = {
 
 let nodes: Node[] = [];
 let edges: Edge[] = [];
+let idToPath: Record<string, string> = {};
 
 type MarkdownNode = {
   type: string;
@@ -72,6 +73,7 @@ const parseFile = async (filePath: string) => {
     nodes.push({ path: filePath, label: title });
   }
 
+  // remove edges based on an old version of this file
   edges = edges.filter((edge) => edge.source !== filePath);
 
   const links = findLinks(ast);
@@ -87,7 +89,10 @@ const parseFile = async (filePath: string) => {
   }
 };
 
-const parseDirectory = async (directory: string) => {
+const parseDirectory = async (
+  directory: string,
+  fileCallback: (path: string) => Promise<void>
+) => {
   const files = await vscode.workspace.fs.readDirectory(
     vscode.Uri.file(directory)
   );
@@ -103,13 +108,17 @@ const parseDirectory = async (directory: string) => {
     const markdownFile = fileName.endsWith(".md");
 
     if (isDirectory && !hiddenFile) {
-      promises.push(parseDirectory(`${directory}/${fileName}`));
+      promises.push(parseDirectory(`${directory}/${fileName}`, fileCallback));
     } else if (isFile && markdownFile) {
-      promises.push(parseFile(`${directory}/${fileName}`));
+      promises.push(fileCallback(`${directory}/${fileName}`));
     }
   }
 
   await Promise.all(promises);
+};
+
+const parseDirectoryForLinks = async (directory: string) => {
+  return await parseDirectory(directory, parseFile);
 };
 
 const exists = (path: string) => !!nodes.find((node) => node.path === path);
@@ -247,7 +256,7 @@ export function activate(context: vscode.ExtensionContext) {
       nodes = [];
       edges = [];
 
-      await parseDirectory(vscode.workspace.rootPath);
+      await parseDirectoryForLinks(vscode.workspace.rootPath);
       filterNonExistingEdges();
 
       const d3Uri = panel.webview.asWebviewUri(
