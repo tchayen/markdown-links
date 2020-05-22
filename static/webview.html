@@ -64,13 +64,14 @@
           return false;
         }
 
-        const set = new Set();
+        const map = new Map();
         for (const node of previous) {
-          set.add(node.path);
+          map.set(node.path, node.label);
         }
 
         for (const node of next) {
-          if (!set.has(node.path)) {
+          const found = map.get(node.path);
+          if (!found || found !== node.title) {
             return false;
           }
         }
