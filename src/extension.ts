@@ -77,7 +77,7 @@ const findTitle = (ast: MarkdownNode): string | null => {
   return null;
 };
 
-const idResolver = (id: string): string[] => {
+const idResolver = (id: string) => {
   const filePath = idToPath[id];
   if (filePath === undefined) {
     return [id];
@@ -85,6 +85,7 @@ const idResolver = (id: string): string[] => {
     return [filePath];
   }
 };
+
 const parser = unified()
   .use(markdown)
   .use(wikiLinkPlugin, { pageResolver: idResolver })
@@ -135,11 +136,7 @@ const findFileId = async (filePath: string): Promise<string | null> => {
   const content = new TextDecoder("utf-8").decode(buffer);
 
   const match = content.match(ID_REGEX);
-  if (match) {
-    return match[1];
-  } else {
-    return null;
-  }
+  return match ? match[1] : null;
 };
 
 const parseForId = async (filePath: string) => {
