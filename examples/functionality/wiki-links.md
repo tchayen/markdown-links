@@ -1,0 +1,3 @@
+# Wiki
+
+[[Wiki style link]].

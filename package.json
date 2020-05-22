@@ -79,6 +79,7 @@
     "@types/md5": "^2.2.0",
     "md5": "^2.2.1",
     "remark-parse": "^8.0.2",
+    "remark-wiki-link": "^0.0.4",
     "unified": "^9.0.0"
   }
 }

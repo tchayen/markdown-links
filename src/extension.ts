@@ -3,6 +3,7 @@ import { TextDecoder } from "util";
 import * as path from "path";
 import * as unified from "unified";
 import * as markdown from "remark-parse";
+import * as wikiLinkPlugin from "remark-wiki-link";
 import * as md5 from "md5";
 
 type Edge = {
@@ -50,9 +51,12 @@ const findLinks = (ast: MarkdownNode): string[] => {
 const parseFile = async (source: string) => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(source));
   const content = new TextDecoder("utf-8").decode(buffer);
-  const ast: MarkdownNode = unified().use(markdown).parse(content);
+  const ast: MarkdownNode = unified()
+    .use(markdown)
+    .use(wikiLinkPlugin)
+    .parse(content);
 
-  let title = null;
+  let title: string | null = null;
   if (
     ast.children &&
     ast.children.length > 0 &&
@@ -91,7 +95,7 @@ const parseDirectory = async (directory: string) => {
     vscode.Uri.file(directory)
   );
 
-  const promises = [];
+  const promises: Promise<void>[] = [];
 
   for (const file of files) {
     const fileName = file[0];
