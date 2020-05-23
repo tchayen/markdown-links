@@ -45,7 +45,7 @@ const getFileIdRegexp = () => {
   // Ensure the id is not preceeded by [[, which would make it a part of
   // wiki-style link, and put the user-supplied regex in a capturing group to
   // retrieve matching string.
-  return new RegExp(`(?<!\\[\\[)(${userValue})`);
+  return new RegExp(`(?<!\\[\\[)(${userValue})`, 'm');
 };
 
 const FILE_ID_REGEXP = getFileIdRegexp();
