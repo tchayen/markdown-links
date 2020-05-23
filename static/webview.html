@@ -27,8 +27,12 @@
         bottom: 0;
         right: 0;
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         margin: 16px;
+      }
+
+      .buttons span > span {
+        color: #000;
       }
 
       span {
@@ -39,7 +43,9 @@
   </head>
   <body>
     <div class="buttons">
-      <span id="zoom">1.00x</span>
+      <span><span id="files">0</span> files</span>
+      <span><span id="connections">0</span> links</span>
+      <span><span id="zoom">1.00</span>x</span>
     </div>
     <script>
       const RADIUS = 4;
@@ -183,10 +189,13 @@
         link.attr("stroke-width", zoomOrKeep(STROKE));
         node.attr("r", zoomOrKeep(RADIUS));
 
-        document.getElementById("zoom").innerHTML = `${scale.k.toFixed(2)}x`;
+        document.getElementById("zoom").innerHTML = scale.k.toFixed(2);
       };
 
       const ticked = () => {
+        document.getElementById("connections").innerHTML = linksData.length;
+        document.getElementById("files").innerHTML = nodesData.length;
+
         node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
         text
           .attr("x", (d) => d.x)
