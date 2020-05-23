@@ -16,12 +16,10 @@
 
       .nodes circle {
         cursor: pointer;
-        fill: #000;
       }
 
       .text text {
         cursor: pointer;
-        fill: #000;
       }
 
       .buttons {
@@ -49,6 +47,8 @@
       const FONT_SIZE = 14;
       const TICKS = 300;
       const FONT_BASELINE = 15;
+      const activeNodeColor = "#0050ff";
+      const nodeColor = "#777";
 
       let nodesData = [];
       let linksData = [];
@@ -98,6 +98,11 @@
         return true;
       };
 
+      const getNodeColor = (node, active) => {
+        console.log(node, active);
+        return node.path === active ? activeNodeColor : nodeColor;
+      };
+
       window.addEventListener("message", (event) => {
         const message = event.data;
         switch (message.type) {
@@ -111,6 +116,15 @@
             nodesData = nodes;
             linksData = edges;
             restart();
+            break;
+          case "fileOpen":
+            console.log("FILE OPEN", message);
+            if (!message.payload.path.endsWith(".md")) {
+              return;
+            }
+
+            node.attr("fill", (d) => getNodeColor(d, message.payload.path));
+            text.attr("fill", (d) => getNodeColor(d, message.payload.path));
             break;
         }
       });
@@ -191,6 +205,7 @@
           .enter()
           .append("circle")
           .attr("r", RADIUS)
+          .attr("fill", (d) => getNodeColor(d))
           .on("click", onClick)
           .merge(node);
 
@@ -211,6 +226,7 @@
           .attr("font-size", `${FONT_SIZE}px`)
           .attr("text-anchor", "middle")
           .attr("alignment-baseline", "central")
+          .attr("fill", (d) => getNodeColor(d))
           .on("click", onClick)
           .merge(text);
 

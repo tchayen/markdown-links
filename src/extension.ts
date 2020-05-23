@@ -45,7 +45,7 @@ const getFileIdRegexp = () => {
   // Ensure the id is not preceeded by [[, which would make it a part of
   // wiki-style link, and put the user-supplied regex in a capturing group to
   // retrieve matching string.
-  return new RegExp(`(?<!\\[\\[)(${userValue})`, 'm');
+  return new RegExp(`(?<!\\[\\[)(${userValue})`, "m");
 };
 
 const FILE_ID_REGEXP = getFileIdRegexp();
@@ -250,6 +250,13 @@ const watch = (
     panel.webview.postMessage({
       type: "refresh",
       payload: { nodes, edges },
+    });
+  });
+
+  vscode.workspace.onDidOpenTextDocument(async (event) => {
+    panel.webview.postMessage({
+      type: "fileOpen",
+      payload: { path: event.fileName },
     });
   });
 
