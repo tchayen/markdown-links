@@ -108,26 +108,25 @@ const parseFile = async (filePath: string) => {
   const content = new TextDecoder("utf-8").decode(buffer);
   const ast: MarkdownNode = parser.parse(content);
 
-  console.log(filePath, ast);
-
-  // TODO:
-  // - parse that YAML
-  // - wiki links?
-
   let title: string | null = findTitle(ast);
 
+  const index = nodes.findIndex((node) => node.path === filePath);
+
   if (!title) {
+    if (index !== -1) {
+      nodes.splice(index, 1);
+    }
+
     return;
   }
 
-  const index = nodes.findIndex((node) => node.path === filePath);
   if (index !== -1) {
     nodes[index].label = title;
   } else {
     nodes.push({ id: id(filePath), path: filePath, label: title });
   }
 
-  // remove edges based on an old version of this file
+  // Remove edges based on an old version of this file.
   edges = edges.filter((edge) => edge.source !== id(filePath));
 
   const links = findLinks(ast);
