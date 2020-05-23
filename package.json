@@ -2,7 +2,7 @@
   "name": "markdown-links",
   "displayName": "Markdown Links",
   "description": "Adds command - Show Graph - that displays a graph of local links between markdown files in the current working directory.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "tchayen",
   "engines": {
     "vscode": "^1.45.0"
