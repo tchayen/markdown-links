@@ -1,4 +1,4 @@
-# A note with both wiki-style and markdown links
+# A note with both wiki-style and Markdown links
 
 It has an ID: 20200522233226
 
