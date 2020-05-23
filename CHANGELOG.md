@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2020-05-23
+
+### Added
+
+- Support for wiki-style links using `[[link]]` format and corresponding `fileIdRegexp` setting for specifying regular expression for resolving file IDs – [d3254f68](https://github.com/tchayen/markdown-links/commit/d3254f687c4cc0a9b11f218dddc5069bb4898cbe).
+
 ## [0.3.0] - 2020-05-22
 
 ### Changed

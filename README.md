@@ -29,9 +29,9 @@ Regular markdown links syntax with a relative or absolute file. For example: `[l
 
 ### ID-based links
 
-A file can be given an ID. The ID is a first string matching a configured pattern (see Settings) found in the file.
+A file can be given an ID. The ID is a first string matching a configured pattern (see [Settings](#settings)) found in the file.
 
-File having an ID can be linked using double-bracketed ("wiki-style") links. For example:
+File having an ID can be linked using double-bracketed 'wiki-style' links. For example:
 
 ```md
 <!-- file1.md -->
@@ -55,7 +55,6 @@ This feature is heavily inspired by [Zettlr](https://github.com/Zettlr/Zettlr), 
 
 By setting the ID regexp setting to `(?<=^# ).+$` all titles (level 1 # headings) will be detected as IDs. This allows you to do the following:
 
-
 ```md
 <!-- file1.md -->
 
@@ -74,7 +73,7 @@ See the other file: [[This file just has a title]]
 
 ## Examples
 
-Here are some examples to better explain the above.
+The extension provides some examples to better explain the concepts above.
 
 ### Basic file
 
@@ -92,9 +91,17 @@ Named reference can also be used, like this: [Reference].
 [reference]: ref.md
 ```
 
-### More
+### Functionality
 
-You can open any example in the `examples` directory and try yourself by pressing `SHIFT+CMD+P` (or `SHIFT+CTRL+P`) and selecting `Show Graph`.
+Explore available functions in [examples/functionality](examples/functionality).
+
+### Wiki
+
+You can can the previously mentioned wiki-style example in [examples/wiki-links](examples/wiki-links).
+
+### Les Miserables
+
+If you want to see behavior of a bit bigger graph, check [examples/miserables](examples/miserables). Remember to run `node miserablelise.js` to generate files.
 
 ## Settings
 
@@ -102,21 +109,21 @@ This extension contributes the following settings:
 
 ### `markdown-links.showColumn`
 
-Controls in which column should the graph appear. Refer to [Column values](###column-values). Defaults to `beside`.
+Controls in which column should the graph appear. Refer to [Column values](####column-values). Defaults to `beside`.
 
 ### `markdown-links.openColumn`
 
-Controls in which column should clicked files open. Refer to [Column values](###column-values). Defaults to `one`.
+Controls in which column should clicked files open. Refer to [Column values](###c#olumn-values). Defaults to `one`.
 
-### `markdown-links.fileIdRegexp`
-
-A [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) used to find the file id for use in wiki-style links.
-
-### Column values
+#### Column values
 
 - `active` – in the currently focused column.
 - `beside` – other than the current.
 - `one` (**default**), `two`, `three`, `four`, `five`, `six`, `seven`, `eight`, `nine` – respective editor columns.
+
+### `markdown-links.fileIdRegexp`
+
+A [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) used to find the file ID for use in wiki-style links.
 
 ## Roadmap
 
