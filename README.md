@@ -2,6 +2,8 @@
 
 Adds command `Show Graph` that displays a graph of local links between Markdown files in the current working directory.
 
+Gives better insights into structure of your files if you are writinga wiki, a Zettelkasten style notebook or documentation.
+
 ![Demo GIF](demo.gif)
 
 ## Workflow
