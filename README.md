@@ -18,9 +18,59 @@ The graph refreshes automatically every time you:
 ## Concepts
 
 - Title is always the first markdown heading of depth 1, i.e. `# Title`.
-- Any link or reference to a local file causes the extension to attempt parsing it. The title is required but links are optional (it results in a lone node with no edges in such case).
-- Graph is not directed. It doesn't show which file has the link and which one is linked.
+- Files which do not have a title do not appear in the graph.
+- Files can link to other files using local Markdown links or ID-based links.
+- The graph is not directed. It doesn't show which file has the link and which one is linked.
 - Directory structure is not relevant for the graph. All that matters is the mutual links between files.
+
+### Local Markdown links
+
+Regular markdown links syntax with a relative or absolute file. For example: `[link name](./other-file-in-this-dir.md)`.
+
+### ID-based links
+
+A file can be given an ID. The ID is a first string matching a configured pattern (see Settings) found in the file.
+
+File having an ID can be linked using double-bracketed ("wiki-style") links. For example:
+
+```md
+<!-- file1.md -->
+
+# This is a file having an id
+
+This is its id: 20200522225822
+```
+
+```md
+<!-- file2.md -->
+
+# This is a file linking to another
+
+See the other file: [[20200522225822]]
+```
+
+This feature is heavily inspired by [Zettlr](https://github.com/Zettlr/Zettlr), therefore its [documentation](https://docs.zettlr.com/en/reference/settings/#the-id-regex) may give useful background.
+
+#### Using title as the ID
+
+By setting the ID regexp setting to `(?<=^# ).+$` all titles (level 1 # headings) will be detected as IDs. This allows you to do the following:
+
+
+```md
+<!-- file1.md -->
+
+# This file just has a title
+
+And some content.
+```
+
+```md
+<!-- file2.md -->
+
+# This is a file linking to another
+
+See the other file: [[This file just has a title]]
+```
 
 ## Examples
 
@@ -57,6 +107,10 @@ Controls in which column should the graph appear. Refer to [Column values](###co
 ### `markdown-links.openColumn`
 
 Controls in which column should clicked files open. Refer to [Column values](###column-values). Defaults to `one`.
+
+### `markdown-links.fileIdRegexp`
+
+A [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) used to find the file id for use in wiki-style links.
 
 ### Column values
 

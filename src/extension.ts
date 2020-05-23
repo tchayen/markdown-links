@@ -18,24 +18,44 @@ type Node = {
   label: string;
 };
 
-const id = (path: string): string => md5(path);
-
-const parser = unified().use(markdown).use(wikiLinkPlugin).use(frontmatter);
-
-let nodes: Node[] = [];
-let edges: Edge[] = [];
-
 type MarkdownNode = {
   type: string;
   children?: MarkdownNode[];
   url?: string;
   value?: string;
   depth?: number;
+  data?: {
+    permalink?: string;
+  };
 };
+
+let nodes: Node[] = [];
+let edges: Edge[] = [];
+let idToPath: Record<string, string> = {};
+
+const id = (path: string): string => md5(path);
+
+const getConfiguration = (key: string) =>
+  vscode.workspace.getConfiguration("markdown-links")[key];
+
+const getFileIdRegexp = () => {
+  const DEFAULT_VALUE = "\\d{14}";
+  const userValue = getConfiguration("fileIdRegexp") || DEFAULT_VALUE;
+
+  // Ensure the id is not preceeded by [[, which would make it a part of
+  // wiki-style link, and put the user-supplied regex in a capturing group to
+  // retrieve matching string.
+  return new RegExp(`(?<!\\[\\[)(${userValue})`, 'm');
+};
+
+const FILE_ID_REGEXP = getFileIdRegexp();
 
 const findLinks = (ast: MarkdownNode): string[] => {
   if (ast.type === "link" || ast.type === "definition") {
     return [ast.url!];
+  }
+  if (ast.type === "wikiLink") {
+    return [ast.data!.permalink!];
   }
 
   const links: string[] = [];
@@ -69,12 +89,26 @@ const findTitle = (ast: MarkdownNode): string | null => {
   return null;
 };
 
-const parseFile = async (source: string) => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(source));
+const idResolver = (id: string) => {
+  const filePath = idToPath[id];
+  if (filePath === undefined) {
+    return [id];
+  } else {
+    return [filePath];
+  }
+};
+
+const parser = unified()
+  .use(markdown)
+  .use(wikiLinkPlugin, { pageResolver: idResolver })
+  .use(frontmatter);
+
+const parseFile = async (filePath: string) => {
+  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
   const ast: MarkdownNode = parser.parse(content);
 
-  console.log(source, ast);
+  console.log(filePath, ast);
 
   // TODO:
   // - parse that YAML
@@ -86,25 +120,48 @@ const parseFile = async (source: string) => {
     return;
   }
 
-  const index = nodes.findIndex((node) => node.path === source);
+  const index = nodes.findIndex((node) => node.path === filePath);
   if (index !== -1) {
     nodes[index].label = title;
   } else {
-    nodes.push({ id: id(source), path: source, label: title });
+    nodes.push({ id: id(filePath), path: filePath, label: title });
   }
 
-  edges = edges.filter((edge) => edge.source !== id(source));
+  // remove edges based on an old version of this file
+  edges = edges.filter((edge) => edge.source !== id(filePath));
+
   const links = findLinks(ast);
+  const parentDirectory = filePath.split("/").slice(0, -1).join("/");
 
   for (const link of links) {
-    const parentDirectory = source.split("/").slice(0, -1).join("/");
-    const target = path.normalize(`${parentDirectory}/${link}`);
+    let target = link;
+    if (!path.isAbsolute(link)) {
+      target = path.normalize(`${parentDirectory}/${link}`);
+    }
 
-    edges.push({ source: id(source), target: id(target) });
+    edges.push({ source: id(filePath), target: id(target) });
   }
 };
 
-const parseDirectory = async (directory: string) => {
+const findFileId = async (filePath: string): Promise<string | null> => {
+  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
+  const content = new TextDecoder("utf-8").decode(buffer);
+
+  const match = content.match(FILE_ID_REGEXP);
+  return match ? match[1] : null;
+};
+
+const learnFileId = async (filePath: string) => {
+  const id = await findFileId(filePath);
+  if (id !== null) {
+    idToPath[id] = filePath;
+  }
+};
+
+const parseDirectory = async (
+  directory: string,
+  fileCallback: (path: string) => Promise<void>
+) => {
   const files = await vscode.workspace.fs.readDirectory(
     vscode.Uri.file(directory)
   );
@@ -120,9 +177,9 @@ const parseDirectory = async (directory: string) => {
     const markdownFile = fileName.endsWith(".md");
 
     if (isDirectory && !hiddenFile) {
-      promises.push(parseDirectory(`${directory}/${fileName}`));
+      promises.push(parseDirectory(`${directory}/${fileName}`, fileCallback));
     } else if (isFile && markdownFile) {
-      promises.push(parseFile(`${directory}/${fileName}`));
+      promises.push(fileCallback(`${directory}/${fileName}`));
     }
   }
 
@@ -150,7 +207,7 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
 };
 
 const getColumnSetting = (key: string) => {
-  const column = vscode.workspace.getConfiguration("markdown-links")[key];
+  const column = getConfiguration(key);
   return settingToValue[column] || vscode.ViewColumn.One;
 };
 
@@ -270,7 +327,8 @@ export function activate(context: vscode.ExtensionContext) {
       nodes = [];
       edges = [];
 
-      await parseDirectory(vscode.workspace.rootPath);
+      await parseDirectory(vscode.workspace.rootPath, learnFileId);
+      await parseDirectory(vscode.workspace.rootPath, parseFile);
       filterNonExistingEdges();
 
       const d3Uri = panel.webview.asWebviewUri(
