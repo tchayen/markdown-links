@@ -118,13 +118,13 @@
             restart();
             break;
           case "fileOpen":
-            console.log("FILE OPEN", message);
-            if (!message.payload.path.endsWith(".md")) {
-              return;
+            let path = message.payload.path;
+            if (path.endsWith(".git")) {
+              path = path.split("").slice(0, -4).join("");
             }
 
-            node.attr("fill", (d) => getNodeColor(d, message.payload.path));
-            text.attr("fill", (d) => getNodeColor(d, message.payload.path));
+            node.attr("fill", (d) => getNodeColor(d, path));
+            text.attr("fill", (d) => getNodeColor(d, path));
             break;
         }
       });
