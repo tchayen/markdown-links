@@ -4,3 +4,5 @@ node_modules
 .vscode-test/
 *.vsix
 examples/miserables/*.md
+package-lock.json
+.DS_Store
