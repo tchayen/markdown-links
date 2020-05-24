@@ -349,16 +349,9 @@ export function activate(context: vscode.ExtensionContext) {
       await parseDirectory(vscode.workspace.rootPath, parseFile);
       filterNonExistingEdges();
 
-      const d3Uri = panel.webview.asWebviewUri(
-        vscode.Uri.file(path.join(context.extensionPath, "static", "d3.min.js"))
-      );
+      console.log(2, getDot());
 
-      panel.webview.html = await getWebviewContent(
-        context,
-        nodes,
-        edges,
-        d3Uri
-      );
+      panel.webview.html = await getWebviewContent(context, nodes, edges);
 
       watch(context, panel);
     })
@@ -368,20 +361,28 @@ export function activate(context: vscode.ExtensionContext) {
 async function getWebviewContent(
   context: vscode.ExtensionContext,
   nodes: Node[],
-  edges: Edge[],
-  d3Uri: vscode.Uri
+  edges: Edge[]
 ) {
   const webviewPath = vscode.Uri.file(
     path.join(context.extensionPath, "static", "webview.html")
   );
   const file = await vscode.workspace.fs.readFile(webviewPath);
 
+  const d3Uri = vscode.Uri.file(
+    path.join(context.extensionPath, "static", "d3.min.js")
+  );
+  const d3File = await vscode.workspace.fs.readFile(d3Uri);
+  const d3text = new TextDecoder("utf-8").decode(d3File);
   const text = new TextDecoder("utf-8").decode(file);
 
   const filled = text
-    .replace("--REPLACE-WITH-D3-URI--", d3Uri.toString())
+    .replace(
+      '<script src="--REPLACE-WITH-D3-URI--"></script>',
+      `<script>${d3text}</script>`
+    )
     .replace("let nodesData = [];", `let nodesData = ${JSON.stringify(nodes)}`)
     .replace("let linksData = [];", `let linksData = ${JSON.stringify(edges)}`);
 
+  console.log(filled); // TODO <- output this to file instead because this causes: 'Unable to log remote console arguments Output omitted for a large object that exceeds the limits'
   return filled;
 }
