@@ -21,14 +21,18 @@ const watch = (
     false
   );
 
-  // Watch file changes in case user adds a link.
-  watcher.onDidChange(async (event) => {
-    await parseFile(graph, event.path);
-    filterNonExistingEdges(graph);
+  const sendGraph = () => {
     panel.webview.postMessage({
       type: "refresh",
       payload: graph,
     });
+  };
+
+  // Watch file changes in case user adds a link.
+  watcher.onDidChange(async (event) => {
+    await parseFile(graph, event.path);
+    filterNonExistingEdges(graph);
+    sendGraph();
   });
 
   watcher.onDidDelete(async (event) => {
@@ -42,10 +46,7 @@ const watch = (
       (edge) => edge.source !== event.path && edge.target !== event.path
     );
 
-    panel.webview.postMessage({
-      type: "refresh",
-      payload: graph,
-    });
+    sendGraph();
   });
 
   vscode.workspace.onDidOpenTextDocument(async (event) => {
@@ -76,10 +77,7 @@ const watch = (
         }
       }
 
-      panel.webview.postMessage({
-        type: "refresh",
-        payload: graph,
-      });
+      sendGraph();
     }
   });
 
