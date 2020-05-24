@@ -6,10 +6,14 @@ import * as wikiLinkPlugin from "remark-wiki-link";
 import * as frontmatter from "remark-frontmatter";
 import { MarkdownNode, Graph } from "./types";
 import { TextDecoder } from "util";
-import { findTitle, findLinks, id, FILE_ID_REGEXP } from "./utils";
+import { findTitle, findLinks, id, getFileIdRegexp } from "./utils";
 
 let idToPath: Record<string, string> = {};
 
+/**
+ * ??
+ * @param id ??
+ */
 export const idResolver = (id: string) => {
   const filePath = idToPath[id];
   if (filePath === undefined) {
@@ -24,6 +28,11 @@ const parser = unified()
   .use(wikiLinkPlugin, { pageResolver: idResolver })
   .use(frontmatter);
 
+/**
+ * Wrapper for `parseFile` that reads a file. Uses `vscode.workspace.fs`.
+ * @param graph object that will be altered.
+ * @param filePath absolute path to the file. Used for reading the file.
+ */
 export const processFile = async (graph: Graph, filePath: string) => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
@@ -31,6 +40,13 @@ export const processFile = async (graph: Graph, filePath: string) => {
   return parseFile(graph, filePath, content);
 };
 
+/**
+ * Alters given graph, adding a node and some edges if file is properly
+ * structured.
+ * @param graph object that will be altered.
+ * @param filePath absolute path to the file. Isn't used for reading the file.
+ * @param content content of the file as utf-8 string.
+ */
 export const parseFile = (graph: Graph, filePath: string, content: string) => {
   const ast: MarkdownNode = parser.parse(content);
 
@@ -68,14 +84,23 @@ export const parseFile = (graph: Graph, filePath: string, content: string) => {
   }
 };
 
+/**
+ * For given file path, returns its ID or null. Uses `vscode.workspace.fs`.
+ * @param filePath absolute path of the file.
+ */
 export const findFileId = async (filePath: string): Promise<string | null> => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
 
-  const match = content.match(FILE_ID_REGEXP);
+  const match = content.match(getFileIdRegexp());
   return match ? match[1] : null;
 };
 
+/**
+ * Populates `idToPath` with ID from the file if one is found there.
+ * @param _graph unused.
+ * @param filePath absolute path of the file.
+ */
 export const learnFileId = async (_graph: Graph, filePath: string) => {
   const id = await findFileId(filePath);
   if (id !== null) {
@@ -83,6 +108,13 @@ export const learnFileId = async (_graph: Graph, filePath: string) => {
   }
 };
 
+/**
+ * Recursively reads content of the given directory and calls specified
+ * callback on each file (not a symlink) with `*.md` extensions.
+ * @param graph object to be altered.
+ * @param directory path of the directory.
+ * @param fileCallback
+ */
 export const parseDirectory = async (
   graph: Graph,
   directory: string,
