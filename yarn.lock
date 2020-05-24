@@ -81,6 +81,11 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.5.tgz#96ec3b0afafd64a4ccea9107b75bf8489f0e5765"
   integrity sha512-3ySmiBYJPqgjiHA7oEaIo2Rzz0HrOZ7yrNO5HWyaE5q0lQ3BppDZ3N53Miz8bw2I7gh1/zir2MGVZBvpb1zq9g==
 
+"@types/simple-mock@^0.8.1":
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@types/simple-mock/-/simple-mock-0.8.1.tgz#bcb7d4bdd1d7c142008af3c32603c7088ad9af33"
+  integrity sha512-Mn5n1v3S5yhhegOSUpXl2WTujBJfM1Oa0YTb9PpaYUq6Iqj6yOxy8h8lwMtNidKs3pAByhp1uIK0QP+OZCsotQ==
+
 "@types/unist@^2.0.0", "@types/unist@^2.0.2":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@types/unist/-/unist-2.0.3.tgz#9c088679876f374eb5983f150d4787aa6fb32d7e"
@@ -3301,6 +3306,11 @@ signal-exit@^3.0.0, signal-exit@^3.0.2:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.3.tgz#a1410c2edd8f077b08b4e253c8eacfcaf057461c"
   integrity sha512-VUJ49FC8U1OxwZLxIbTTrDvLnf/6TDgxZcK8wxR8zs13xpx7xbG60ndBlhNrFi2EMuFRoeDoJO7wthSLq42EjA==
+
+simple-mock@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/simple-mock/-/simple-mock-0.8.0.tgz#49c9a223fa6eea8e2c4fd6948fe8300cd8a594f3"
+  integrity sha1-ScmiI/pu6o4sT9aUj+gwDNillPM=
 
 slice-ansi@^2.1.0:
   version "2.1.0"

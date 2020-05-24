@@ -1,8 +1,13 @@
 import * as assert from "assert";
+import * as simple from "simple-mock";
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from "vscode";
+
+import * as unified from "unified";
+import * as markdown from "remark-parse";
+
 import * as ast from "./ast.json";
 import {
   findLinks,
@@ -15,7 +20,7 @@ import {
 import { Graph } from "../../types";
 import { parseFile } from "../../parsing";
 
-suite("Tests", () => {
+describe("Tests", () => {
   vscode.window.showInformationMessage("Start all tests.");
 
   const getGraph = () => ({
@@ -31,7 +36,9 @@ suite("Tests", () => {
     ],
   });
 
-  test("findLinks works", () => {
+  const parser = unified().use(markdown);
+
+  it("findLinks works", () => {
     const links = findLinks(ast);
     const expected = [
       "another.md",
@@ -44,26 +51,36 @@ suite("Tests", () => {
     assert.deepStrictEqual(links, expected);
   });
 
-  test("findTitle works", () => {
-    assert.equal(findTitle(ast), "Links");
+  describe("findTitle", () => {
+    it("works", () => {
+      assert.equal(findTitle(ast), "Links");
+    });
+
+    it("selects correct title out of many", () => {
+      assert.equal(findTitle(parser.parse("# First\n\n# Second")), "First");
+    });
+
+    it("does not find title if none exists", () => {
+      assert.equal(findTitle(parser.parse("No title\n\nAnywhere here.")), null);
+    });
   });
 
-  test("id works", () => {
+  it("id works", () => {
     assert.equal(
       id("/Users/test/Desktop/notes/1.md"),
       "a2c0c4c2697d0cde5f0e3888bf1d7630"
     );
   });
 
-  test("getColumnSetting works", () => {
+  xit("getColumnSetting works", () => {
     // TODO: mock vscode.workspace.getConfiguration
   });
 
-  test("getFileIdRegexp", () => {
+  xit("getFileIdRegexp", () => {
     // TODO: mock vscode.workspace.getConfiguration
   });
 
-  test("getDot works", () => {
+  it("getDot works", () => {
     const graph = getGraph();
     const dot = getDot(graph);
     const expected =
@@ -72,13 +89,13 @@ suite("Tests", () => {
     assert.equal(dot, expected);
   });
 
-  test("exists works", () => {
+  it("exists works", () => {
     const graph = getGraph();
     assert.equal(exists(graph, "1"), true);
     assert.equal(exists(graph, "First"), false);
   });
 
-  test("filterNonExistingEdges", () => {
+  it("filterNonExistingEdges", () => {
     const graph = getGraph();
     graph.edges.push({ source: "2", target: "https://wikipedia.org" });
     graph.edges.push({ source: "2", target: "4" });
@@ -88,9 +105,9 @@ suite("Tests", () => {
     assert.equal(graph.edges.length, 3);
   });
 
-  test("idResolver works", () => {});
+  xit("idResolver works", () => {});
 
-  test("parseFile works", () => {
+  it("parseFile works", () => {
     const graph: Graph = {
       nodes: [],
       edges: [],
@@ -113,15 +130,15 @@ suite("Tests", () => {
     ]);
   });
 
-  test("findFileId works", () => {
+  xit("findFileId works", () => {
     // TODO: mocks.
   });
 
-  test("learnFileId works", () => {
+  xit("learnFileId works", () => {
     // TODO: mocks.
   });
 
-  test("parseDirectory works", () => {
+  xit("parseDirectory works", () => {
     // TODO: mocks.
   });
 });
