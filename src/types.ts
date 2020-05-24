@@ -1,0 +1,21 @@
+export type Edge = {
+  source: string;
+  target: string;
+};
+
+export type Node = {
+  id: string;
+  path: string;
+  label: string;
+};
+
+export type MarkdownNode = {
+  type: string;
+  children?: MarkdownNode[];
+  url?: string;
+  value?: string;
+  depth?: number;
+  data?: {
+    permalink?: string;
+  };
+};
