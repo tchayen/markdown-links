@@ -9,6 +9,11 @@ export type Node = {
   label: string;
 };
 
+export type Graph = {
+  nodes: Node[];
+  edges: Edge[];
+};
+
 export type MarkdownNode = {
   type: string;
   children?: MarkdownNode[];
