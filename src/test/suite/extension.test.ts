@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import * as simple from "simple-mock";
+import * as sinon from "sinon";
 
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
@@ -16,11 +16,32 @@ import {
   getDot,
   exists,
   filterNonExistingEdges,
+  getColumnSetting,
+  getFileIdRegexp,
 } from "../../utils";
 import { Graph } from "../../types";
-import { parseFile } from "../../parsing";
+import {
+  parseFile,
+  findFileId,
+  parseDirectory,
+  processFile,
+} from "../../parsing";
+import { TextEncoder } from "util";
 
 describe("Tests", () => {
+  let stub;
+
+  before(() => {
+    stub = sinon.stub(vscode.workspace, "getConfiguration").returns({
+      openColumn: "one",
+      fileIdRegexp: "\\d{10}",
+    } as any);
+  });
+
+  after(() => {
+    stub.reset();
+  });
+
   vscode.window.showInformationMessage("Start all tests.");
 
   const getGraph = () => ({
@@ -72,12 +93,24 @@ describe("Tests", () => {
     );
   });
 
-  xit("getColumnSetting works", () => {
-    // TODO: mock vscode.workspace.getConfiguration
+  it("getColumnSetting works", () => {
+    const setting = getColumnSetting("openColumn");
+    assert.equal(setting, vscode.ViewColumn.One);
   });
 
-  xit("getFileIdRegexp", () => {
-    // TODO: mock vscode.workspace.getConfiguration
+  describe("getFileIdRegexp", () => {
+    it("works", () => {
+      const regexp = getFileIdRegexp();
+
+      assert.equal(
+        regexp.test("# Title\n\n1234567890\n\nThat was an ID."),
+        true
+      );
+
+      assert.equal(regexp.test("# Title\n\n123456\n\nThat was an ID."), false);
+    });
+
+    xit("defaults if no regexp is set", () => {});
   });
 
   it("getDot works", () => {
@@ -97,7 +130,7 @@ describe("Tests", () => {
 
   it("filterNonExistingEdges", () => {
     const graph = getGraph();
-    graph.edges.push({ source: "2", target: "https://wikipedia.org" });
+    graph.edges.push({ source: "2", target: "https://wikipedia.org/" });
     graph.edges.push({ source: "2", target: "4" });
 
     assert.equal(graph.edges.length, 5);
@@ -107,38 +140,82 @@ describe("Tests", () => {
 
   xit("idResolver works", () => {});
 
-  it("parseFile works", () => {
-    const graph: Graph = {
-      nodes: [],
-      edges: [],
-    };
+  describe("parseFile", () => {
+    it("works", () => {
+      const graph: Graph = {
+        nodes: [],
+        edges: [],
+      };
 
-    const path = "/Users/test/Desktop/notes";
-    const firstFileName = "1.md";
-    const firstFilePath = `${path}/${firstFileName}`;
-    const secondFileName = "2.md";
-    const title = "Test";
-    const content = `# ${title}\n\n[Link](${secondFileName})\n`;
+      const path = "/Users/test/Desktop/notes";
+      const firstFileName = "1.md";
+      const firstFilePath = `${path}/${firstFileName}`;
+      const secondFileName = "2.md";
+      const title = "Test";
+      const content = `# ${title}\n\n[Link](${secondFileName})\n`;
 
-    parseFile(graph, firstFilePath, content);
+      parseFile(graph, firstFilePath, content);
 
-    assert.deepStrictEqual(graph.nodes, [
-      { id: id(firstFilePath), label: title, path: firstFilePath },
-    ]);
-    assert.deepStrictEqual(graph.edges, [
-      { source: id(firstFilePath), target: id(`${path}/${secondFileName}`) },
-    ]);
+      assert.deepStrictEqual(graph.nodes, [
+        { id: id(firstFilePath), label: title, path: firstFilePath },
+      ]);
+      assert.deepStrictEqual(graph.edges, [
+        { source: id(firstFilePath), target: id(`${path}/${secondFileName}`) },
+      ]);
+    });
   });
 
-  xit("findFileId works", () => {
-    // TODO: mocks.
+  it("findFileId works", async () => {
+    const file = "# Title\n\n1234567890\n\nThat was an ID.";
+
+    const promise: Promise<Uint8Array> = new Promise((resolve) =>
+      resolve(new TextEncoder().encode(file))
+    );
+
+    const stub = sinon.stub(vscode.workspace.fs, "readFile").returns(promise);
+
+    assert.equal(
+      await findFileId("/Users/test/Desktop/notes/1.md"),
+      "1234567890"
+    );
+
+    stub.reset();
   });
 
   xit("learnFileId works", () => {
     // TODO: mocks.
   });
 
-  xit("parseDirectory works", () => {
-    // TODO: mocks.
+  describe("parseDirectory", () => {
+    xit("works", async () => {
+      const promise: Promise<[string, vscode.FileType][]> = new Promise(
+        (resolve) =>
+          resolve([
+            ["/Users/test/Desktop/notes/1.md", vscode.FileType.File],
+            ["/Users/test/Desktop/notes/2.md", vscode.FileType.File],
+          ])
+      );
+
+      const stub = sinon
+        .stub(vscode.workspace.fs, "readDirectory")
+        .returns(promise);
+
+      const graph = {
+        nodes: [],
+        edges: [],
+      };
+
+      // TODO:
+      // - mock readFile to give proper content
+      // - assert to make check if parseDirectory populates the graph
+
+      await parseDirectory(graph, "/Users/test/Desktop/notes", processFile);
+
+      stub.reset();
+    });
+
+    xit("returns empty graph for non-existing directory", async () => {});
+
+    xit("", async () => {});
   });
 });
