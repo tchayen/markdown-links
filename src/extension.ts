@@ -1,230 +1,14 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
-import * as unified from "unified";
-import * as markdown from "remark-parse";
-import * as wikiLinkPlugin from "remark-wiki-link";
-import * as frontmatter from "remark-frontmatter";
-import * as md5 from "md5";
-
-type Edge = {
-  source: string;
-  target: string;
-};
-
-type Node = {
-  id: string;
-  path: string;
-  label: string;
-};
-
-type MarkdownNode = {
-  type: string;
-  children?: MarkdownNode[];
-  url?: string;
-  value?: string;
-  depth?: number;
-  data?: {
-    permalink?: string;
-  };
-};
-
-let nodes: Node[] = [];
-let edges: Edge[] = [];
-let idToPath: Record<string, string> = {};
-
-const id = (path: string): string => {
-  return md5(path);
-
-  // Extracting file name without extension:
-  // const fullPath = path.split("/");
-  // const fileName = fullPath[fullPath.length - 1];
-  // return fileName.split(".")[0];
-};
-
-const getDot = () => `digraph g {
-${nodes.map((node) => `  ${node.id} [label="${node.label}"];`).join("\n")}
-${edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
-}`;
-
-const getConfiguration = (key: string) =>
-  vscode.workspace.getConfiguration("markdown-links")[key];
-
-const getFileIdRegexp = () => {
-  const DEFAULT_VALUE = "\\d{14}";
-  const userValue = getConfiguration("fileIdRegexp") || DEFAULT_VALUE;
-
-  // Ensure the id is not preceeded by [[, which would make it a part of
-  // wiki-style link, and put the user-supplied regex in a capturing group to
-  // retrieve matching string.
-  return new RegExp(`(?<!\\[\\[)(${userValue})`, "m");
-};
-
-const FILE_ID_REGEXP = getFileIdRegexp();
-
-const findLinks = (ast: MarkdownNode): string[] => {
-  if (ast.type === "link" || ast.type === "definition") {
-    return [ast.url!];
-  }
-  if (ast.type === "wikiLink") {
-    return [ast.data!.permalink!];
-  }
-
-  const links: string[] = [];
-
-  if (!ast.children) {
-    return links;
-  }
-
-  for (const node of ast.children) {
-    links.push(...findLinks(node));
-  }
-
-  return links;
-};
-
-const findTitle = (ast: MarkdownNode): string | null => {
-  if (!ast.children) {
-    return null;
-  }
-
-  for (const child of ast.children) {
-    if (
-      child.type === "heading" &&
-      child.depth === 1 &&
-      child.children &&
-      child.children.length > 0
-    ) {
-      return child.children[0].value!;
-    }
-  }
-  return null;
-};
-
-const idResolver = (id: string) => {
-  const filePath = idToPath[id];
-  if (filePath === undefined) {
-    return [id];
-  } else {
-    return [filePath];
-  }
-};
-
-const parser = unified()
-  .use(markdown)
-  .use(wikiLinkPlugin, { pageResolver: idResolver })
-  .use(frontmatter);
-
-const parseFile = async (filePath: string) => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
-  const content = new TextDecoder("utf-8").decode(buffer);
-  const ast: MarkdownNode = parser.parse(content);
-
-  let title: string | null = findTitle(ast);
-
-  const index = nodes.findIndex((node) => node.path === filePath);
-
-  if (!title) {
-    if (index !== -1) {
-      nodes.splice(index, 1);
-    }
-
-    return;
-  }
-
-  if (index !== -1) {
-    nodes[index].label = title;
-  } else {
-    nodes.push({ id: id(filePath), path: filePath, label: title });
-  }
-
-  // Remove edges based on an old version of this file.
-  edges = edges.filter((edge) => edge.source !== id(filePath));
-
-  const links = findLinks(ast);
-  const parentDirectory = filePath.split("/").slice(0, -1).join("/");
-
-  for (const link of links) {
-    let target = link;
-    if (!path.isAbsolute(link)) {
-      target = path.normalize(`${parentDirectory}/${link}`);
-    }
-
-    edges.push({ source: id(filePath), target: id(target) });
-  }
-};
-
-const findFileId = async (filePath: string): Promise<string | null> => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
-  const content = new TextDecoder("utf-8").decode(buffer);
-
-  const match = content.match(FILE_ID_REGEXP);
-  return match ? match[1] : null;
-};
-
-const learnFileId = async (filePath: string) => {
-  const id = await findFileId(filePath);
-  if (id !== null) {
-    idToPath[id] = filePath;
-  }
-};
-
-const parseDirectory = async (
-  directory: string,
-  fileCallback: (path: string) => Promise<void>
-) => {
-  const files = await vscode.workspace.fs.readDirectory(
-    vscode.Uri.file(directory)
-  );
-
-  const promises: Promise<void>[] = [];
-
-  for (const file of files) {
-    const fileName = file[0];
-    const fileType = file[1];
-    const isDirectory = fileType === vscode.FileType.Directory;
-    const isFile = fileType === vscode.FileType.File;
-    const hiddenFile = fileName.startsWith(".");
-    const markdownFile = fileName.endsWith(".md");
-
-    if (isDirectory && !hiddenFile) {
-      promises.push(parseDirectory(`${directory}/${fileName}`, fileCallback));
-    } else if (isFile && markdownFile) {
-      promises.push(fileCallback(`${directory}/${fileName}`));
-    }
-  }
-
-  await Promise.all(promises);
-};
-
-const exists = (id: string) => !!nodes.find((node) => node.id === id);
-
-const filterNonExistingEdges = () => {
-  edges = edges.filter((edge) => exists(edge.source) && exists(edge.target));
-};
-
-const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
-  active: -1,
-  beside: -2,
-  one: 1,
-  two: 2,
-  three: 3,
-  four: 4,
-  five: 5,
-  six: 6,
-  seven: 7,
-  eight: 8,
-  nine: 9,
-};
-
-const getColumnSetting = (key: string) => {
-  const column = getConfiguration(key);
-  return settingToValue[column] || vscode.ViewColumn.One;
-};
+import { parseFile, parseDirectory, learnFileId } from "./parsing";
+import { filterNonExistingEdges, getColumnSetting } from "./utils";
+import { Graph } from "./types";
 
 const watch = (
   context: vscode.ExtensionContext,
-  panel: vscode.WebviewPanel
+  panel: vscode.WebviewPanel,
+  graph: Graph
 ) => {
   if (vscode.workspace.rootPath === undefined) {
     return;
@@ -237,31 +21,32 @@ const watch = (
     false
   );
 
-  // Watch file changes in case user adds a link.
-  watcher.onDidChange(async (event) => {
-    await parseFile(event.path);
-    filterNonExistingEdges();
+  const sendGraph = () => {
     panel.webview.postMessage({
       type: "refresh",
-      payload: { nodes, edges },
+      payload: graph,
     });
+  };
+
+  // Watch file changes in case user adds a link.
+  watcher.onDidChange(async (event) => {
+    await parseFile(graph, event.path);
+    filterNonExistingEdges(graph);
+    sendGraph();
   });
 
   watcher.onDidDelete(async (event) => {
-    const index = nodes.findIndex((node) => node.path === event.path);
+    const index = graph.nodes.findIndex((node) => node.path === event.path);
     if (index === -1) {
       return;
     }
 
-    nodes.splice(index, 1);
-    edges = edges.filter(
+    graph.nodes.splice(index, 1);
+    graph.edges = graph.edges.filter(
       (edge) => edge.source !== event.path && edge.target !== event.path
     );
 
-    panel.webview.postMessage({
-      type: "refresh",
-      payload: { nodes, edges },
-    });
+    sendGraph();
   });
 
   vscode.workspace.onDidOpenTextDocument(async (event) => {
@@ -276,7 +61,7 @@ const watch = (
       const previous = file.oldUri.path;
       const next = file.newUri.path;
 
-      for (const edge of edges) {
+      for (const edge of graph.edges) {
         if (edge.source === previous) {
           edge.source = next;
         }
@@ -286,16 +71,13 @@ const watch = (
         }
       }
 
-      for (const node of nodes) {
+      for (const node of graph.nodes) {
         if (node.path === previous) {
           node.path = next;
         }
       }
 
-      panel.webview.postMessage({
-        type: "refresh",
-        payload: { nodes, edges },
-      });
+      sendGraph();
     }
   });
 
@@ -341,34 +123,29 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // Reset arrays.
-      nodes = [];
-      edges = [];
+      const graph: Graph = {
+        nodes: [],
+        edges: [],
+      };
 
-      await parseDirectory(vscode.workspace.rootPath, learnFileId);
-      await parseDirectory(vscode.workspace.rootPath, parseFile);
-      filterNonExistingEdges();
+      await parseDirectory(graph, vscode.workspace.rootPath, learnFileId);
+      await parseDirectory(graph, vscode.workspace.rootPath, parseFile);
+      filterNonExistingEdges(graph);
 
       const d3Uri = panel.webview.asWebviewUri(
         vscode.Uri.file(path.join(context.extensionPath, "static", "d3.min.js"))
       );
 
-      panel.webview.html = await getWebviewContent(
-        context,
-        nodes,
-        edges,
-        d3Uri
-      );
+      panel.webview.html = await getWebviewContent(context, graph, d3Uri);
 
-      watch(context, panel);
+      watch(context, panel, graph);
     })
   );
 }
 
 async function getWebviewContent(
   context: vscode.ExtensionContext,
-  nodes: Node[],
-  edges: Edge[],
+  graph: Graph,
   d3Uri: vscode.Uri
 ) {
   const webviewPath = vscode.Uri.file(
@@ -380,8 +157,14 @@ async function getWebviewContent(
 
   const filled = text
     .replace("--REPLACE-WITH-D3-URI--", d3Uri.toString())
-    .replace("let nodesData = [];", `let nodesData = ${JSON.stringify(nodes)}`)
-    .replace("let linksData = [];", `let linksData = ${JSON.stringify(edges)}`);
+    .replace(
+      "let nodesData = [];",
+      `let nodesData = ${JSON.stringify(graph.nodes)}`
+    )
+    .replace(
+      "let linksData = [];",
+      `let linksData = ${JSON.stringify(graph.edges)}`
+    );
 
   return filled;
 }
