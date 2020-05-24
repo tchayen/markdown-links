@@ -33,7 +33,19 @@ let nodes: Node[] = [];
 let edges: Edge[] = [];
 let idToPath: Record<string, string> = {};
 
-const id = (path: string): string => md5(path);
+const id = (path: string): string => {
+  return md5(path);
+
+  // Extracting file name without extension:
+  // const fullPath = path.split("/");
+  // const fileName = fullPath[fullPath.length - 1];
+  // return fileName.split(".")[0];
+};
+
+const getDot = () => `digraph g {
+${nodes.map((node) => `  ${node.id} [label="${node.label}"];`).join("\n")}
+${edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
+}`;
 
 const getConfiguration = (key: string) =>
   vscode.workspace.getConfiguration("markdown-links")[key];
