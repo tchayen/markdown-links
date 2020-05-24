@@ -12,6 +12,8 @@ import {
   exists,
   filterNonExistingEdges,
 } from "../../utils";
+import { Graph } from "../../types";
+import { parseFile } from "../../parsing";
 
 suite("Tests", () => {
   vscode.window.showInformationMessage("Start all tests.");
@@ -88,11 +90,38 @@ suite("Tests", () => {
 
   test("idResolver works", () => {});
 
-  test("parseFile works", () => {});
+  test("parseFile works", () => {
+    const graph: Graph = {
+      nodes: [],
+      edges: [],
+    };
 
-  test("findFileId works", () => {});
+    const path = "/Users/test/Desktop/notes";
+    const firstFileName = "1.md";
+    const firstFilePath = `${path}/${firstFileName}`;
+    const secondFileName = "2.md";
+    const title = "Test";
+    const content = `# ${title}\n\n[Link](${secondFileName})\n`;
 
-  test("learnFileId works", () => {});
+    parseFile(graph, firstFilePath, content);
 
-  test("parseDirectory works", () => {});
+    assert.deepStrictEqual(graph.nodes, [
+      { id: id(firstFilePath), label: title, path: firstFilePath },
+    ]);
+    assert.deepStrictEqual(graph.edges, [
+      { source: id(firstFilePath), target: id(`${path}/${secondFileName}`) },
+    ]);
+  });
+
+  test("findFileId works", () => {
+    // TODO: mocks.
+  });
+
+  test("learnFileId works", () => {
+    // TODO: mocks.
+  });
+
+  test("parseDirectory works", () => {
+    // TODO: mocks.
+  });
 });

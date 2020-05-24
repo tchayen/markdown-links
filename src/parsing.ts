@@ -24,9 +24,14 @@ const parser = unified()
   .use(wikiLinkPlugin, { pageResolver: idResolver })
   .use(frontmatter);
 
-export const parseFile = async (graph: Graph, filePath: string) => {
+export const processFile = async (graph: Graph, filePath: string) => {
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
+
+  return parseFile(graph, filePath, content);
+};
+
+export const parseFile = (graph: Graph, filePath: string, content: string) => {
   const ast: MarkdownNode = parser.parse(content);
 
   let title: string | null = findTitle(ast);
