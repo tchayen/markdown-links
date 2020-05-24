@@ -85,11 +85,9 @@ export const getFileIdRegexp = () => {
 export const FILE_ID_REGEXP = getFileIdRegexp();
 
 export const getDot = (graph: Graph) => `digraph g {
-  ${graph.nodes
-    .map((node) => `  ${node.id} [label="${node.label}"];`)
-    .join("\n")}
-  ${graph.edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
-  }`;
+${graph.nodes.map((node) => `  ${node.id} [label="${node.label}"];`).join("\n")}
+${graph.edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
+}`;
 
 export const exists = (graph: Graph, id: string) =>
   !!graph.nodes.find((node) => node.id === id);
