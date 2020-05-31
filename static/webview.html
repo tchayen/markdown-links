@@ -7,19 +7,22 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background-color: #fff;
+        background-color: var(--vscode-editor-background);
       }
 
       .links line {
-        stroke: #ccc;
+        stroke: var(--vscode-editor-foreground);
+        opacity: 0.5;
       }
 
       .nodes circle {
         cursor: pointer;
+        fill: var(--vscode-editor-foreground);
       }
 
       .text text {
         cursor: pointer;
+        fill: var(--vscode-editor-foreground);
       }
 
       .buttons {
@@ -29,15 +32,13 @@
         display: flex;
         flex-direction: column;
         margin: 16px;
+        cursor: default;
       }
 
       .buttons span > span {
-        color: #000;
+        color: var(--vscode-foreground);
       }
 
-      span {
-        color: #666;
-      }
     </style>
     <script src="--REPLACE-WITH-D3-URI--"></script>
   </head>
