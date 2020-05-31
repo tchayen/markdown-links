@@ -41,3 +41,5 @@ And some content.
 
 See the other file: [[This file just has a title]]
 ```
+
+You'll have to **restart VS Code** for the changed setting to take effect.
