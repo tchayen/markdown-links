@@ -18,11 +18,20 @@
       .nodes circle {
         cursor: pointer;
         fill: var(--vscode-editor-foreground);
+        transition: all 0.15s ease-out;
       }
 
       .text text {
         cursor: pointer;
         fill: var(--vscode-editor-foreground);
+      }
+      .nodes [active],
+      .text [active] {
+        cursor: pointer;
+        fill: var(--vscode-textLink-foreground);
+      }
+      .nodes circle[active] {
+        r: 6;
       }
 
       .buttons {
@@ -127,11 +136,16 @@
           case "fileOpen":
             let path = message.payload.path;
             if (path.endsWith(".git")) {
-              path = path.split("").slice(0, -4).join("");
+              path = path.slice(0, -4);
             }
 
-            //node.attr("fill", (d) => getNodeColor(d, path));
-            //text.attr("fill", (d) => getNodeColor(d, path));
+            const fixSlashes = (input) => {
+              const onLocalWindowsFilesystem = navigator.platform == "Win32" && /^\w:\\/.test(input);
+              return onLocalWindowsFilesystem ? input.replace(/\//g, "\\") : input;
+            }
+
+            node.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
+            text.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
             break;
         }
       });
