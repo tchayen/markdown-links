@@ -7,19 +7,31 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background-color: #fff;
+        background-color: var(--vscode-editor-background);
       }
 
       .links line {
-        stroke: #ccc;
+        stroke: var(--vscode-editor-foreground);
+        opacity: 0.5;
       }
 
       .nodes circle {
         cursor: pointer;
+        fill: var(--vscode-editor-foreground);
+        transition: all 0.15s ease-out;
       }
 
       .text text {
         cursor: pointer;
+        fill: var(--vscode-editor-foreground);
+      }
+      .nodes [active],
+      .text [active] {
+        cursor: pointer;
+        fill: var(--vscode-textLink-foreground);
+      }
+      .nodes circle[active] {
+        r: 6;
       }
 
       .buttons {
@@ -29,15 +41,13 @@
         display: flex;
         flex-direction: column;
         margin: 16px;
+        cursor: default;
       }
 
       .buttons span > span {
-        color: #000;
+        color: var(--vscode-foreground);
       }
 
-      span {
-        color: #666;
-      }
     </style>
     <script src="--REPLACE-WITH-D3-URI--"></script>
   </head>
@@ -53,8 +63,8 @@
       const FONT_SIZE = 14;
       const TICKS = 5000;
       const FONT_BASELINE = 15;
-      const activeNodeColor = "#0050ff";
-      const nodeColor = "#777";
+      //const activeNodeColor = "#0050ff";
+      //const nodeColor = "#777";
 
       let nodesData = [];
       let linksData = [];
@@ -104,10 +114,10 @@
         return true;
       };
 
-      const getNodeColor = (node, active) => {
-        console.log(node, active);
-        return node.path === active ? activeNodeColor : nodeColor;
-      };
+      // const getNodeColor = (node, active) => {
+      //   console.log(node, active);
+      //   return node.path === active ? activeNodeColor : nodeColor;
+      // };
 
       window.addEventListener("message", (event) => {
         const message = event.data;
@@ -126,11 +136,16 @@
           case "fileOpen":
             let path = message.payload.path;
             if (path.endsWith(".git")) {
-              path = path.split("").slice(0, -4).join("");
+              path = path.slice(0, -4);
             }
 
-            node.attr("fill", (d) => getNodeColor(d, path));
-            text.attr("fill", (d) => getNodeColor(d, path));
+            const fixSlashes = (input) => {
+              const onLocalWindowsFilesystem = navigator.platform == "Win32" && /^\w:\\/.test(input);
+              return onLocalWindowsFilesystem ? input.replace(/\//g, "\\") : input;
+            }
+
+            node.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
+            text.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
             break;
         }
       });
@@ -214,7 +229,7 @@
           .enter()
           .append("circle")
           .attr("r", RADIUS)
-          .attr("fill", (d) => getNodeColor(d))
+          // .attr("fill", (d) => getNodeColor(d))
           .on("click", onClick)
           .merge(node);
 
@@ -235,7 +250,7 @@
           .attr("font-size", `${FONT_SIZE}px`)
           .attr("text-anchor", "middle")
           .attr("alignment-baseline", "central")
-          .attr("fill", (d) => getNodeColor(d))
+          // .attr("fill", (d) => getNodeColor(d))
           .on("click", onClick)
           .merge(text);
 
