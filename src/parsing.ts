@@ -7,6 +7,7 @@ import * as frontmatter from "remark-frontmatter";
 import { MarkdownNode, Graph } from "./types";
 import { TextDecoder } from "util";
 import { findTitle, findLinks, id, FILE_ID_REGEXP } from "./utils";
+import { basename } from "path";
 
 let idToPath: Record<string, string> = {};
 
@@ -71,8 +72,12 @@ export const findFileId = async (filePath: string): Promise<string | null> => {
   return match ? match[1] : null;
 };
 
+export const generateFileIdFromFilePath = (filePath: string) => {
+  return basename(filePath).split(".")[0];
+};
+
 export const learnFileId = async (_graph: Graph, filePath: string) => {
-  const id = await findFileId(filePath);
+  let id = (await findFileId(filePath)) || generateFileIdFromFilePath(filePath);
   if (id !== null) {
     idToPath[id] = filePath;
   }
