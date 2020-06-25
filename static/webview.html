@@ -11,7 +11,7 @@
       }
 
       .links line {
-        stroke: #ccc;
+        stroke: #000;
       }
 
       .nodes circle {
@@ -48,18 +48,36 @@
       <span><span id="zoom">1.00</span>x</span>
     </div>
     <script>
-      const RADIUS = 4;
+      const RADIUS = 8;
       const STROKE = 1;
       const FONT_SIZE = 14;
-      const TICKS = 5000;
-      const FONT_BASELINE = 15;
+      const TICKS = 10000;
+      const FONT_BASELINE = 20;
       const activeNodeColor = "#0050ff";
-      const nodeColor = "#777";
+      const nodeColor = "#000";
 
       let nodesData = [];
       let linksData = [];
 
       const vscode = acquireVsCodeApi();
+
+      const colors = [
+        "#ECD1C9",
+        "#FBB5AE",
+        "#FFEFBC",
+        "#B7D1DF",
+        "#D1E2CE",
+        "#FADAE5",
+        "#ECE3D5",
+        "#F2F2F2",
+        "#ECE3C1",
+        "#BEDFC8",
+        "#F9F2B6",
+        "#EFD0BD",
+        "#DDD0E5",
+        "#F2E4C8",
+        "#CBCBCB",
+      ];
 
       const onClick = (d) => {
         vscode.postMessage({ type: "click", payload: d });
@@ -105,7 +123,6 @@
       };
 
       const getNodeColor = (node, active) => {
-        console.log(node, active);
         return node.path === active ? activeNodeColor : nodeColor;
       };
 

@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
 import { parseDirectory, learnFileId, processFile } from "./parsing";
-import { filterNonExistingEdges, getColumnSetting } from "./utils";
+import { filterNonExistingEdges, getColumnSetting, getDot } from "./utils";
 import { Graph } from "./types";
 
 const watch = (
@@ -138,6 +138,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       panel.webview.html = await getWebviewContent(context, graph, d3Uri);
 
+      console.log(getDot(graph));
       watch(context, panel, graph);
     })
   );

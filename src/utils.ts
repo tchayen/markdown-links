@@ -60,12 +60,12 @@ export const findTitle = (ast: MarkdownNode): string | null => {
  * @param path absolute path of the file.
  */
 export const id = (path: string): string => {
-  return md5(path);
+  // return md5(path);
 
   // Extracting file name without extension:
-  // const fullPath = path.split("/");
-  // const fileName = fullPath[fullPath.length - 1];
-  // return fileName.split(".")[0];
+  const fullPath = path.split("/");
+  const fileName = fullPath[fullPath.length - 1];
+  return fileName.split(".")[0];
 };
 
 /**
