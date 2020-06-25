@@ -72,15 +72,17 @@ export const findFileId = async (filePath: string): Promise<string | null> => {
   return match ? match[1] : null;
 };
 
-export const generateFileIdFromFilePath = (filePath: string) => {
-  return basename(filePath).split(".")[0];
-};
-
 export const learnFileId = async (_graph: Graph, filePath: string) => {
-  let id = (await findFileId(filePath)) || generateFileIdFromFilePath(filePath);
+  const id = await findFileId(filePath);
   if (id !== null) {
     idToPath[id] = filePath;
   }
+
+  const fileName = basename(filePath);
+  idToPath[fileName] = filePath;
+
+  const fileNameWithoutExt = fileName.split(".").slice(0, -1).join(".");
+  idToPath[fileNameWithoutExt] = filePath;
 };
 
 export const parseDirectory = async (
