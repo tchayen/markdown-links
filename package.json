@@ -22,6 +22,7 @@
   },
   "license": "MIT",
   "activationEvents": [
+    "onLanguage:markdown",
     "onCommand:markdown-links.showGraph"
   ],
   "main": "./dist/extension.js",
@@ -29,7 +30,7 @@
     "commands": [
       {
         "command": "markdown-links.showGraph",
-        "title": "Show Graph"
+        "title": "Markdown Links: Show Graph"
       }
     ],
     "configuration": {
@@ -49,6 +50,11 @@
           "type": "string",
           "default": "\\d{14}",
           "description": "Regular extension used to find file IDs. First match of this regex in file contents, excluding [[links]], will be used as the file ID. This file ID can be used for wiki-style links."
+        },
+        "markdown-links.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Should Markdown Links automatically start when a markdown file is opened."
         }
       }
     }

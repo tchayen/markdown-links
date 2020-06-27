@@ -6,13 +6,13 @@ This is early development version. I am currently considering:
 - [x] Setting for choosing column for opening files.
 - [x] Support for Zettlr-style ID-based links.
 - [x] Highlighting of focused file.
-- [ ] Automated tests.
-- [ ] Dark theme support (+ auto detecting system's dark/light mode).
-- [ ] Zoom controls (`+` / `-` / `reset`).
-- [ ] Handling external URLs.
+- [ ] Automated tests. _WIP by [@tchayen](https://github.com/tchayen)_
+- [ ] ~~Dark theme support (+ auto detecting system's dark/light mode).~~ Support for detecting theme's colors was added.
+- [ ] Zoom button controls (`+` / `-` / `reset`).
+- [ ] Optional displaying of external URLs in the graph.
 - [ ] Ignoring files or directories.
 - [ ] Some directory controls within the graph view (adding, removing files).
-- [ ] Configurable simulation.
+- [ ] Configurable parameters of graph simulation.
 - [ ] Optional display of edge directions.
 - [ ] Better examples.
-- [ ] Optional autostart.
+- [x] Optional autostart.

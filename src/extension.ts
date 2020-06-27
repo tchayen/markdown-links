@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
 import { parseFile, parseDirectory, learnFileId } from "./parsing";
-import { filterNonExistingEdges, getColumnSetting } from "./utils";
+import { filterNonExistingEdges, getColumnSetting, getConfiguration } from "./utils";
 import { Graph } from "./types";
 
 const watch = (
@@ -141,6 +141,12 @@ export function activate(context: vscode.ExtensionContext) {
       watch(context, panel, graph);
     })
   );
+
+  const shouldAutoStart = getConfiguration("autoStart");
+
+  if (shouldAutoStart) {
+    vscode.commands.executeCommand("markdown-links.showGraph");
+  }
 }
 
 async function getWebviewContent(
