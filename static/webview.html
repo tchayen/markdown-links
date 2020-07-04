@@ -30,9 +30,6 @@
         cursor: pointer;
         fill: var(--vscode-textLink-foreground);
       }
-      .nodes circle[active] {
-        r: 6;
-      }
 
       .buttons {
         position: absolute;
@@ -59,6 +56,7 @@
     </div>
     <script>
       const RADIUS = 4;
+      const ACTIVE_RADIUS = 6;
       const STROKE = 1;
       const FONT_SIZE = 14;
       const TICKS = 5000;
@@ -119,36 +117,6 @@
       //   return node.path === active ? activeNodeColor : nodeColor;
       // };
 
-      window.addEventListener("message", (event) => {
-        const message = event.data;
-        switch (message.type) {
-          case "refresh":
-            const { nodes, edges } = message.payload;
-
-            if (sameNodes(nodesData, nodes) && sameEdges(linksData, edges)) {
-              return;
-            }
-
-            nodesData = nodes;
-            linksData = edges;
-            restart();
-            break;
-          case "fileOpen":
-            let path = message.payload.path;
-            if (path.endsWith(".git")) {
-              path = path.slice(0, -4);
-            }
-
-            const fixSlashes = (input) => {
-              const onLocalWindowsFilesystem = navigator.platform == "Win32" && /^\w:\\/.test(input);
-              return onLocalWindowsFilesystem ? input.replace(/\//g, "\\") : input;
-            }
-
-            node.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
-            text.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
-            break;
-        }
-      });
 
       const element = document.createElementNS(
         "http://www.w3.org/2000/svg",
@@ -190,12 +158,14 @@
       let node = g.append("g").attr("class", "nodes").selectAll(".node");
       let text = g.append("g").attr("class", "text").selectAll(".text");
 
-      const zoomActions = () => {
-        const scale = d3.event.transform;
-        zoomLevel = scale.k;
-        g.attr("transform", scale);
+      const resize = () => {
+        if (d3.event) {
+          const scale = d3.event.transform;
+          zoomLevel = scale.k;
+          g.attr("transform", scale);
+        }
 
-        const zoomOrKeep = (value) => (scale.k >= 1 ? value / scale.k : value);
+        const zoomOrKeep = (value) => (zoomLevel >= 1 ? value / zoomLevel : value);
 
         const font = Math.max(Math.round(zoomOrKeep(FONT_SIZE)), 1);
 
@@ -203,9 +173,47 @@
         text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE));
         link.attr("stroke-width", zoomOrKeep(STROKE));
         node.attr("r", zoomOrKeep(RADIUS));
+        svg.selectAll('circle').filter(function() {
+          return d3.select(this).attr("active");
+        }).attr("r", zoomOrKeep(ACTIVE_RADIUS));
 
-        document.getElementById("zoom").innerHTML = scale.k.toFixed(2);
+        document.getElementById("zoom").innerHTML = zoomLevel.toFixed(2);
       };
+
+      window.addEventListener("message", (event) => {
+        const message = event.data;
+
+        switch (message.type) {
+          case "refresh":
+            const { nodes, edges } = message.payload;
+
+            if (sameNodes(nodesData, nodes) && sameEdges(linksData, edges)) {
+              return;
+            }
+
+            nodesData = nodes;
+            linksData = edges;
+            restart();
+            break;
+          case "fileOpen":
+            let path = message.payload.path;
+            if (path.endsWith(".git")) {
+              path = path.slice(0, -4);
+            }
+
+            const fixSlashes = (input) => {
+              const onLocalWindowsFilesystem = navigator.platform == "Win32" && /^\w:\\/.test(input);
+              return onLocalWindowsFilesystem ? input.replace(/\//g, "\\") : input;
+            }
+
+            node.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
+            text.attr("active", (d) => fixSlashes(d.path) === path ? true : null);
+            break;
+        }
+
+        // Resize to update size of active node
+        resize();
+      });
 
       const ticked = () => {
         document.getElementById("connections").innerHTML = linksData.length;
@@ -271,7 +279,7 @@
         .scaleExtent([0.2, 3])
         //.translateExtent([[0,0], [width, height]])
         //.extent([[0, 0], [width, height]])
-        .on("zoom", zoomActions);
+        .on("zoom", resize);
 
       zoomHandler(svg);
       restart();
