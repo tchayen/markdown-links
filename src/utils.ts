@@ -43,8 +43,10 @@ export const findTitle = (ast: MarkdownNode): string | null => {
 
 export const id = (path: string): string => {
   const withoutExtension = path.replace(/\.\w+$/, "");
-  const withDashes = withoutExtension.replace(/ /g, "-");
-  return md5(withDashes);
+  const withoutIncludedDashes = withoutExtension.replace(/ - /g, "-");
+  const withDashesInsteadOfBlanks = withoutIncludedDashes.replace(/ /g, "-");
+  const lowercased = withDashesInsteadOfBlanks.toLowerCase();
+  return md5(lowercased);
 };
 
 export const getConfiguration = (key: string) =>
