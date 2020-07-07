@@ -42,12 +42,9 @@ export const findTitle = (ast: MarkdownNode): string | null => {
 };
 
 export const id = (path: string): string => {
-  return md5(path);
-
-  // Extracting file name without extension:
-  // const fullPath = path.split("/");
-  // const fileName = fullPath[fullPath.length - 1];
-  // return fileName.split(".")[0];
+  const withoutExtension = path.replace(/\.\w+$/, "");
+  const withDashes = withoutExtension.replace(/ /g, "-");
+  return md5(withDashes);
 };
 
 export const getConfiguration = (key: string) =>
