@@ -41,12 +41,23 @@ export const findTitle = (ast: MarkdownNode): string | null => {
   return null;
 };
 
-export const id = (path: string): string => {
+/**
+ * Creates slugs from paths,
+ * akin to Markdown Notes'
+ * naming convention.
+ * See https://github.com/kortina/vscode-markdown-notes#wiki-links
+ */
+const slugify = (path: string): string => {
   const withoutExtension = path.replace(/\.\w+$/, "");
   const withoutIncludedDashes = withoutExtension.replace(/ - /g, "-");
   const withDashesInsteadOfBlanks = withoutIncludedDashes.replace(/ /g, "-");
   const lowercased = withDashesInsteadOfBlanks.toLowerCase();
-  return md5(lowercased);
+  return lowercased;
+};
+
+export const id = (path: string): string => {
+  const slug = slugify(path);
+  return md5(slug);
 };
 
 export const getConfiguration = (key: string) =>
