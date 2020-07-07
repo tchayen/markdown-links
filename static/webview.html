@@ -165,7 +165,8 @@
           g.attr("transform", scale);
         }
 
-        const zoomOrKeep = (value) => (zoomLevel >= 1 ? value / zoomLevel : value);
+        const zoomOrKeep = (value) =>
+          zoomLevel >= 1 ? value / zoomLevel : value;
 
         const font = Math.max(Math.round(zoomOrKeep(FONT_SIZE)), 1);
 
@@ -173,9 +174,10 @@
         text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE));
         link.attr("stroke-width", zoomOrKeep(STROKE));
         node.attr("r", zoomOrKeep(RADIUS));
-        svg.selectAll('circle').filter(function() {
-          return d3.select(this).attr("active");
-        }).attr("r", zoomOrKeep(ACTIVE_RADIUS));
+        svg
+          .selectAll("circle")
+          .filter((_d, i, nodes) => select(nodes[i]).attr("active"))
+          .attr("r", zoomOrKeep(ACTIVE_RADIUS));
 
         document.getElementById("zoom").innerHTML = zoomLevel.toFixed(2);
       };
