@@ -93,7 +93,7 @@ describe("Tests", () => {
 
   it("id works", () => {
     assert.equal(
-      id("./src/test/data/1.md"),
+      id("./some/random/sub/directory/1.md"),
       "1"
     );
   });
@@ -103,19 +103,23 @@ describe("Tests", () => {
     assert.equal(setting, vscode.ViewColumn.One);
   });
 
-  describe("getFileIdRegexp", () => {
-    it("works", () => {
-      const regexp = getFileIdRegexp();
+  describe("File ID Parser for Zettlr", () => {
 
+    it("Parses 10 digits from a file as per the Zettlr ID reference", () => {
+      const regexp = getFileIdRegexp();
       assert.equal(
         regexp.test("# Title\n\n1234567890\n\nThat was an ID."),
         true
       );
-
-      assert.equal(regexp.test("# Title\n\n123456\n\nThat was an ID."), false);
     });
 
-    xit("defaults if no regexp is set", () => {});
+    it("Does not parse 9 digits, that would be an invalid reference", () => {
+      const regexp = getFileIdRegexp();
+
+      assert.equal(regexp.test("# Title\n\n123456789\n\nThat was an invalid ID."), false);
+    });
+
+    xit("You can override the default regular expression", () => {});
   });
 
   it("getDot works", () => {
