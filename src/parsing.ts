@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import * as fs from "fs";
+import * as util from "util";
 import * as unified from "unified";
 import * as markdown from "remark-parse";
 import * as wikiLinkPlugin from "remark-wiki-link";
@@ -10,6 +12,8 @@ import { findTitle, findLinks, id, getFileIdRegexp, getFileTypesSetting } from "
 import { basename } from "path";
 
 let idToPath: Record<string, string> = {};
+
+const readFileAsync = util.promisify(fs.readFile);
 
 /**
  * ??
@@ -44,8 +48,7 @@ export const processFile = async (graph: Graph, filePath: string) => {
  * @param filePath absolute path to the file. Used for reading the file.
  */
 export const readFile = async (filePath: string) => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
-  return new TextDecoder("utf-8").decode(buffer);
+  return await readFileAsync(filePath, {encoding:'utf8'});
 };
 
 /**
