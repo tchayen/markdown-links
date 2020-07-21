@@ -218,7 +218,13 @@ describe("Tests", () => {
 
       await parseDirectory(graph, testFolder(""), processFile);
 
-      console.log(graph);
+      assert.equal(graph.nodes.length, 2);
+      const getData = ({label, id}) => {
+        return { label, id };
+      };
+      assert.deepStrictEqual(getData(graph.nodes[0]), {label: "Test", id: "1"});
+      assert.deepStrictEqual(getData(graph.nodes[1]), {label: "Test 2", id: "2"});
+      
     });
 
     xit("returns empty graph for non-existing directory", async () => {});
