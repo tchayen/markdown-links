@@ -102,9 +102,9 @@ export const parseDirectory = async (
     const isDirectory = fileType === vscode.FileType.Directory;
     const isFile = fileType === vscode.FileType.File;
     const hiddenFile = fileName.startsWith(".");
-const isGraphFile = getFileTypesSetting().includes(
-  fileName.substr(fileName.lastIndexOf('.') + 1)
-)
+    const isGraphFile = getFileTypesSetting().includes(
+      fileName.substr(fileName.lastIndexOf('.') + 1)
+    )
 
     if (isDirectory && !hiddenFile) {
       promises.push(
