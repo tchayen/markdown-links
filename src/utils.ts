@@ -41,13 +41,23 @@ export const findTitle = (ast: MarkdownNode): string | null => {
   return null;
 };
 
-export const id = (path: string): string => {
-  return md5(path);
+/**
+ * Creates slugs from paths,
+ * akin to Markdown Notes'
+ * naming convention.
+ * See https://github.com/kortina/vscode-markdown-notes#wiki-links
+ */
+const slugify = (path: string): string => {
+  const withoutExtension = path.replace(/\.\w+$/, "");
+  const withoutIncludedDashes = withoutExtension.replace(/ - /g, "-");
+  const withDashesInsteadOfBlanks = withoutIncludedDashes.replace(/ /g, "-");
+  const lowercased = withDashesInsteadOfBlanks.toLowerCase();
+  return lowercased;
+};
 
-  // Extracting file name without extension:
-  // const fullPath = path.split("/");
-  // const fileName = fullPath[fullPath.length - 1];
-  // return fileName.split(".")[0];
+export const id = (path: string): string => {
+  const slug = slugify(path);
+  return md5(slug);
 };
 
 export const getConfiguration = (key: string) =>
