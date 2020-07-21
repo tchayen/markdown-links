@@ -2,7 +2,8 @@ import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
 import { parseDirectory, learnFileId, processFile } from "./parsing";
-import { filterNonExistingEdges, getColumnSetting, getDot } from "./utils";
+import { filterNonExistingEdges, getColumnSetting, getConfiguration, getFileTypesSetting, getDot } from "./utils";
+
 import { Graph } from "./types";
 
 const watch = (
@@ -15,7 +16,7 @@ const watch = (
   }
 
   const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(vscode.workspace.rootPath, "**/*.md"),
+    new vscode.RelativePattern(vscode.workspace.rootPath, `**/*{${getFileTypesSetting().join(",")}}`),
     false,
     false,
     false
@@ -142,6 +143,12 @@ export function activate(context: vscode.ExtensionContext) {
       watch(context, panel, graph);
     })
   );
+
+  const shouldAutoStart = getConfiguration("autoStart");
+
+  if (shouldAutoStart) {
+    vscode.commands.executeCommand("markdown-links.showGraph");
+  }
 }
 
 async function getWebviewContent(

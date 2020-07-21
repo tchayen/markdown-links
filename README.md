@@ -23,7 +23,7 @@ When active file in the editor changes and it matches one of the files in the gr
 
 - Title is always the first Markdown heading of depth 1, i.e. `# Title`.
 - Files which do not have a title do not appear in the graph.
-- Files can link to other files using [local Markdown links](docs/local-links.md) or [ID-based links](docs/id-based-links.md).
+- Files can link to other files using [local Markdown links](docs/local-links.md), [ID-based links](docs/id-based-links.md), or `[file-name]` links.
 - The graph is not directed. It doesn't show which file has the link and which one is linked.
 - Directory structure is not relevant for the graph. All that matters is the mutual links between files.
 

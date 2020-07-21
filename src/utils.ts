@@ -113,10 +113,18 @@ export const getFileIdRegexp = () => {
   return new RegExp(`(?<!\\[\\[)(${userValue})`, "m");
 };
 
+
 /**
  * Returns DOT language definition of the given graph.
  * @param graph graph to print.
  */
+export const FILE_ID_REGEXP = getFileIdRegexp();
+
+export const getFileTypesSetting = () => {
+  const DEFAULT_VALUE = ["md"];
+  return getConfiguration("fileTypes") || DEFAULT_VALUE;
+};
+
 export const getDot = (graph: Graph) => `digraph g {
 ${graph.nodes.map((node) => `  ${node.id} [label="${node.label}"];`).join("\n")}
 ${graph.edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
