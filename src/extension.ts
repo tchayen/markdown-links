@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
 import { parseFile, parseDirectory, learnFileId } from "./parsing";
-import { filterNonExistingEdges, getColumnSetting, getConfiguration } from "./utils";
+import { filterNonExistingEdges, getColumnSetting, getConfiguration, getFileTypesSetting } from "./utils";
 import { Graph } from "./types";
 
 const watch = (
@@ -15,7 +15,7 @@ const watch = (
   }
 
   const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(vscode.workspace.rootPath, "**/*.md"),
+    new vscode.RelativePattern(vscode.workspace.rootPath, "**/*{" + getFileTypesSetting().join(",") +"}"),
     false,
     false,
     false

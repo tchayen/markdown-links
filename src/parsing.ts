@@ -6,7 +6,7 @@ import * as wikiLinkPlugin from "remark-wiki-link";
 import * as frontmatter from "remark-frontmatter";
 import { MarkdownNode, Graph } from "./types";
 import { TextDecoder } from "util";
-import { findTitle, findLinks, id, FILE_ID_REGEXP } from "./utils";
+import { findTitle, findLinks, id, FILE_ID_REGEXP, getFileTypesSetting, getConfiguration } from "./utils";
 import { basename } from "path";
 
 let idToPath: Record<string, string> = {};
@@ -102,13 +102,13 @@ export const parseDirectory = async (
     const isDirectory = fileType === vscode.FileType.Directory;
     const isFile = fileType === vscode.FileType.File;
     const hiddenFile = fileName.startsWith(".");
-    const markdownFile = fileName.endsWith(".md");
+    const isGraphFile = getFileTypesSetting().includes(fileName.substr(fileName.lastIndexOf('.')+1));
 
     if (isDirectory && !hiddenFile) {
       promises.push(
         parseDirectory(graph, `${directory}/${fileName}`, fileCallback)
       );
-    } else if (isFile && markdownFile) {
+    } else if (isFile && isGraphFile) {
       promises.push(fileCallback(graph, `${directory}/${fileName}`));
     }
   }
