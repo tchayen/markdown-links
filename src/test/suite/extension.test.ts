@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as sinon from "sinon";
-
+import * as path from "path";
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from "vscode";
@@ -25,9 +25,14 @@ import {
   findFileId,
   parseDirectory,
   processFile,
+  readFile
 } from "../../parsing";
 import { TextEncoder } from "util";
 
+const testFolder = (file) => {
+  let dir = __dirname;
+  return path.join(dir + "/../../../src/test/data/" + file);
+};
 describe("Tests", () => {
   let stub;
 
@@ -88,8 +93,8 @@ describe("Tests", () => {
 
   it("id works", () => {
     assert.equal(
-      id("/Users/test/Desktop/notes/1.md"),
-      "a2c0c4c2697d0cde5f0e3888bf1d7630"
+      id("./src/test/data/1.md"),
+      "1"
     );
   });
 
@@ -141,6 +146,15 @@ describe("Tests", () => {
   xit("idResolver works", () => {});
 
   describe("parseFile", () => {
+    it("readFile reads content", async () => {
+      const graph: Graph = {
+        nodes: [],
+        edges: [],
+      };
+      const content = await readFile(testFolder("1.md"));
+      assert.equal(content, "# Test");
+    });
+
     it("works", () => {
       const graph: Graph = {
         nodes: [],

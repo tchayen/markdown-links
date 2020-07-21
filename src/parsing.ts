@@ -35,10 +35,17 @@ const parser = unified()
  * @param filePath absolute path to the file. Used for reading the file.
  */
 export const processFile = async (graph: Graph, filePath: string) => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
-  const content = new TextDecoder("utf-8").decode(buffer);
-
+  let content = await readFile(filePath);
   return parseFile(graph, filePath, content);
+};
+
+/**
+ * Read file, return text.
+ * @param filePath absolute path to the file. Used for reading the file.
+ */
+export const readFile = async (filePath: string) => {
+  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
+  return new TextDecoder("utf-8").decode(buffer);
 };
 
 /**
