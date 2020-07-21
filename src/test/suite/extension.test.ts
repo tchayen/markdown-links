@@ -205,18 +205,7 @@ describe("Tests", () => {
   });
 
   describe("parseDirectory", () => {
-    xit("works", async () => {
-      const promise: Promise<[string, vscode.FileType][]> = new Promise(
-        (resolve) =>
-          resolve([
-            ["/Users/test/Desktop/notes/1.md", vscode.FileType.File],
-            ["/Users/test/Desktop/notes/2.md", vscode.FileType.File],
-          ])
-      );
-
-      const stub = sinon
-        .stub(vscode.workspace.fs, "readDirectory")
-        .returns(promise);
+    it("works", async () => {
 
       const graph = {
         nodes: [],
@@ -227,13 +216,12 @@ describe("Tests", () => {
       // - mock readFile to give proper content
       // - assert to make check if parseDirectory populates the graph
 
-      await parseDirectory(graph, "/Users/test/Desktop/notes", processFile);
+      await parseDirectory(graph, testFolder(""), processFile);
 
-      stub.reset();
+      console.log(graph);
     });
 
     xit("returns empty graph for non-existing directory", async () => {});
 
-    xit("", async () => {});
   });
 });
