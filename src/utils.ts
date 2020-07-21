@@ -84,6 +84,11 @@ export const getFileIdRegexp = () => {
 
 export const FILE_ID_REGEXP = getFileIdRegexp();
 
+export const getFileTypesSetting = () => {
+  const DEFAULT_VALUE = ["md"];
+  return getConfiguration("fileTypes") || DEFAULT_VALUE;
+};
+
 export const getDot = (graph: Graph) => `digraph g {
   ${graph.nodes
     .map((node) => `  ${node.id} [label="${node.label}"];`)
