@@ -15,7 +15,7 @@ const watch = (
   }
 
   const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(vscode.workspace.rootPath, "**/*{" + getFileTypesSetting().join(",") +"}"),
+    new vscode.RelativePattern(vscode.workspace.rootPath, `**/*{${getFileTypesSetting().join(",")}}`),
     false,
     false,
     false
