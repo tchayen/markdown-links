@@ -64,10 +64,29 @@
       //const activeNodeColor = "#0050ff";
       //const nodeColor = "#777";
 
+
       let nodesData = [];
       let linksData = [];
 
       const vscode = acquireVsCodeApi();
+
+      const colors = [
+        "#ECD1C9",
+        "#FBB5AE",
+        "#FFEFBC",
+        "#B7D1DF",
+        "#D1E2CE",
+        "#FADAE5",
+        "#ECE3D5",
+        "#F2F2F2",
+        "#ECE3C1",
+        "#BEDFC8",
+        "#F9F2B6",
+        "#EFD0BD",
+        "#DDD0E5",
+        "#F2E4C8",
+        "#CBCBCB",
+      ];
 
       const onClick = (d) => {
         vscode.postMessage({ type: "click", payload: d });
@@ -112,11 +131,10 @@
         return true;
       };
 
-      // const getNodeColor = (node, active) => {
-      //   console.log(node, active);
-      //   return node.path === active ? activeNodeColor : nodeColor;
-      // };
 
+      const getNodeColor = (node, active) => {
+        return node.path === active ? activeNodeColor : nodeColor;
+      };
 
       const element = document.createElementNS(
         "http://www.w3.org/2000/svg",

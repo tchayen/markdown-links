@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
-import { parseFile, parseDirectory, learnFileId } from "./parsing";
-import { filterNonExistingEdges, getColumnSetting, getConfiguration, getFileTypesSetting } from "./utils";
+import { parseDirectory, learnFileId, processFile } from "./parsing";
+import { filterNonExistingEdges, getColumnSetting, getConfiguration, getFileTypesSetting, getDot } from "./utils";
+
 import { Graph } from "./types";
 
 const watch = (
@@ -30,7 +31,7 @@ const watch = (
 
   // Watch file changes in case user adds a link.
   watcher.onDidChange(async (event) => {
-    await parseFile(graph, event.path);
+    processFile(graph, event.path);
     filterNonExistingEdges(graph);
     sendGraph();
   });
@@ -129,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
       };
 
       await parseDirectory(graph, vscode.workspace.rootPath, learnFileId);
-      await parseDirectory(graph, vscode.workspace.rootPath, parseFile);
+      await parseDirectory(graph, vscode.workspace.rootPath, processFile);
       filterNonExistingEdges(graph);
 
       const d3Uri = panel.webview.asWebviewUri(
@@ -138,6 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       panel.webview.html = await getWebviewContent(context, graph, d3Uri);
 
+      console.log(getDot(graph));
       watch(context, panel, graph);
     })
   );

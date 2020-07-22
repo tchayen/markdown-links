@@ -78,3 +78,12 @@ Refer to the [CHANGELOG.md](CHANGELOG.md) file.
 You are very welcome to open an issue or a pull request with changes.
 
 If it is your first time with vscode extension, make sure to checkout [Official Guides](https://code.visualstudio.com/api/get-started/your-first-extension).
+
+If you want to run test locally you'll need to yarn install:
+
+```terminal
+yarn install
+```
+
+Then to run tests use the debugger > `Extention Tests` option
+
