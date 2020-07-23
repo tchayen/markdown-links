@@ -35,6 +35,13 @@ const watch = (
     sendGraph();
   });
 
+  // Watch file creation in case user adds a new file
+  watcher.onDidCreate(async (event) => {
+    await parseFile(graph, event.path);
+    filterNonExistingEdges(graph);
+    sendGraph();
+  });
+
   watcher.onDidDelete(async (event) => {
     const index = graph.nodes.findIndex((node) => node.path === event.path);
     if (index === -1) {
