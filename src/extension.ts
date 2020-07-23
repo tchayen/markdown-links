@@ -2,7 +2,12 @@ import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
 import { parseFile, parseDirectory, learnFileId } from "./parsing";
-import { filterNonExistingEdges, getColumnSetting, getConfiguration, getFileTypesSetting } from "./utils";
+import {
+  filterNonExistingEdges,
+  getColumnSetting,
+  getConfiguration,
+  getFileTypesSetting,
+} from "./utils";
 import { Graph } from "./types";
 
 const watch = (
@@ -15,7 +20,10 @@ const watch = (
   }
 
   const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(vscode.workspace.rootPath, `**/*{${getFileTypesSetting().join(",")}}`),
+    new vscode.RelativePattern(
+      vscode.workspace.rootPath,
+      `**/*{${getFileTypesSetting().join(",")}}`
+    ),
     false,
     false,
     false
@@ -128,8 +136,8 @@ export function activate(context: vscode.ExtensionContext) {
         edges: [],
       };
 
-      await parseDirectory(graph, vscode.workspace.rootPath, learnFileId);
-      await parseDirectory(graph, vscode.workspace.rootPath, parseFile);
+      await parseDirectory(graph, learnFileId);
+      await parseDirectory(graph, parseFile);
       filterNonExistingEdges(graph);
 
       const d3Uri = panel.webview.asWebviewUri(

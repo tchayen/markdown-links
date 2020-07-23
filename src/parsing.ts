@@ -6,7 +6,14 @@ import * as wikiLinkPlugin from "remark-wiki-link";
 import * as frontmatter from "remark-frontmatter";
 import { MarkdownNode, Graph } from "./types";
 import { TextDecoder } from "util";
-import { findTitle, findLinks, id, FILE_ID_REGEXP, getFileTypesSetting, getConfiguration } from "./utils";
+import {
+  findTitle,
+  findLinks,
+  id,
+  FILE_ID_REGEXP,
+  getFileTypesSetting,
+  getConfiguration,
+} from "./utils";
 import { basename } from "path";
 
 let idToPath: Record<string, string> = {};
@@ -87,31 +94,18 @@ export const learnFileId = async (_graph: Graph, filePath: string) => {
 
 export const parseDirectory = async (
   graph: Graph,
-  directory: string,
   fileCallback: (graph: Graph, path: string) => Promise<void>
 ) => {
-  const files = await vscode.workspace.fs.readDirectory(
-    vscode.Uri.file(directory)
+  const files = await vscode.workspace.findFiles(
+    `**/*{${getFileTypesSetting().join(",")}}`
   );
 
   const promises: Promise<void>[] = [];
 
   for (const file of files) {
-    const fileName = file[0];
-    const fileType = file[1];
-    const isDirectory = fileType === vscode.FileType.Directory;
-    const isFile = fileType === vscode.FileType.File;
-    const hiddenFile = fileName.startsWith(".");
-    const isGraphFile = getFileTypesSetting().includes(
-      fileName.substr(fileName.lastIndexOf('.') + 1)
-    )
-
-    if (isDirectory && !hiddenFile) {
-      promises.push(
-        parseDirectory(graph, `${directory}/${fileName}`, fileCallback)
-      );
-    } else if (isFile && isGraphFile) {
-      promises.push(fileCallback(graph, `${directory}/${fileName}`));
+    const hiddenFile = path.basename(file.path).startsWith(".");
+    if (!hiddenFile) {
+      promises.push(fileCallback(graph, file.path));
     }
   }
 
