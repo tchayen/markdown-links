@@ -97,7 +97,7 @@ export const parseDirectory = async (
   fileCallback: (graph: Graph, path: string) => Promise<void>
 ) => {
   const files = await vscode.workspace.findFiles(
-    `**/*{${getFileTypesSetting().join(",")}}`
+    `**/*{${(getFileTypesSetting() as string[]).map((f) => `.${f}`).join(",")}}`
   );
 
   const promises: Promise<void>[] = [];
