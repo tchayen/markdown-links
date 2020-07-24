@@ -85,7 +85,7 @@
 
         for (const node of next) {
           const found = map.get(node.id);
-          if (!found || found !== node.title) {
+          if (!found || found !== node.label) {
             return false;
           }
         }
