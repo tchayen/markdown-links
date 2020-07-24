@@ -93,6 +93,21 @@
         return true;
       };
 
+      const mergeNodes = (previous, next) => {
+        for (const node of next) {
+          const found = previous.find((x) => x.id === node.id);
+          if (found) {
+            node.index = found.index;
+            node.x = found.x;
+            node.y = found.y;
+            node.vy = found.vy;
+            node.vx = found.vx;
+          }
+        }
+
+        return next;
+      };
+
       const sameEdges = (previous, next) => {
         if (next.length !== previous.length) {
           return false;
@@ -193,7 +208,7 @@
               return;
             }
 
-            nodesData = nodes;
+            nodesData = mergeNodes(nodesData, nodes);
             linksData = edges;
             restart();
             break;
