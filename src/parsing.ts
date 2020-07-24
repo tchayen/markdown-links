@@ -96,6 +96,8 @@ export const parseDirectory = async (
   graph: Graph,
   fileCallback: (graph: Graph, path: string) => Promise<void>
 ) => {
+  // `findFiles` is used here since it respects files excluded by either the
+  // global or workspace level files.exclude config option.
   const files = await vscode.workspace.findFiles(
     `**/*{${(getFileTypesSetting() as string[]).map((f) => `.${f}`).join(",")}}`
   );
