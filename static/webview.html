@@ -176,7 +176,7 @@
         node.attr("r", zoomOrKeep(RADIUS));
         svg
           .selectAll("circle")
-          .filter((_d, i, nodes) => select(nodes[i]).attr("active"))
+          .filter((_d, i, nodes) => d3.select(nodes[i]).attr("active"))
           .attr("r", zoomOrKeep(ACTIVE_RADIUS));
 
         document.getElementById("zoom").innerHTML = zoomLevel.toFixed(2);
