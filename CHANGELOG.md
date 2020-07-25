@@ -5,19 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] – 2020-07-25
+
+### Added
+
+- Extensions to look for can now be specified in settings ([#31](https://github.com/tchayen/markdown-links/pull/31)).
+- Configurable autostart ([#14](https://github.com/tchayen/markdown-links/pull/14)).
+
+### Fixed
+
+- Graph should now properly update on adding a new file ([#34](https://github.com/tchayen/markdown-links/pull/34)).
+- Wrong active node size when zooming ([#20](https://github.com/tchayen/markdown-links/pull/20)).
+
 ## [0.6.0] – 2020-06-26
 
 ### Added
 
-- Support for [file-name] ids. A format where id of a file is its name (works either with or without `.md` extension).
+- Support for [file-name] ids. A format where id of a file is its name (works either with or without `.md` extension) ([#13](https://github.com/tchayen/markdown-links/pull/13)).
 
 ### Fixed
 
-- Active node highlight should work better on Windows.
+- Active node highlight should work better on Windows ([#10](https://github.com/tchayen/markdown-links/pull/10)).
 
 ### Changed
 
-- Extension will now pick colors of your theme. It should give much more consistent look in majority of cases, but inevitably means that it might also break. Let us know in issues if something is wrong.
+- Extension will now pick colors of your theme ([#10](https://github.com/tchayen/markdown-links/pull/10)).
 
 ## [0.5.0] – 2020-05-23
 
@@ -29,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for wiki-style links using `[[link]]` format and corresponding `fileIdRegexp` setting for specifying regular expression for resolving file IDs – [d3254f68](https://github.com/tchayen/markdown-links/commit/d3254f687c4cc0a9b11f218dddc5069bb4898cbe).
+- Support for wiki-style links using `[[link]]` format and corresponding `fileIdRegexp` setting for specifying regular expression for resolving file IDs – ([#3](https://github.com/tchayen/markdown-links/pull/3)).
 
 ## [0.3.0] - 2020-05-22
 
