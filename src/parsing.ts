@@ -33,6 +33,7 @@ const parser = unified()
   .use(frontmatter);
 
 export const parseFile = async (graph: Graph, filePath: string) => {
+  filePath = path.normalize(filePath);
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
   const ast: MarkdownNode = parser.parse(content);
@@ -59,10 +60,10 @@ export const parseFile = async (graph: Graph, filePath: string) => {
   graph.edges = graph.edges.filter((edge) => edge.source !== id(filePath));
 
   const links = findLinks(ast);
-  const parentDirectory = filePath.split("/").slice(0, -1).join("/");
+  const parentDirectory = filePath.split(path.sep).slice(0, -1).join(path.sep);
 
   for (const link of links) {
-    let target = link;
+    let target = path.normalize(link);
     if (!path.isAbsolute(link)) {
       target = path.normalize(`${parentDirectory}/${link}`);
     }
