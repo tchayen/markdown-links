@@ -85,12 +85,27 @@
 
         for (const node of next) {
           const found = map.get(node.id);
-          if (!found || found !== node.title) {
+          if (!found || found !== node.label) {
             return false;
           }
         }
 
         return true;
+      };
+
+      const mergeNodes = (previous, next) => {
+        for (const node of next) {
+          const found = previous.find((x) => x.id === node.id);
+          if (found) {
+            node.index = found.index;
+            node.x = found.x;
+            node.y = found.y;
+            node.vy = found.vy;
+            node.vx = found.vx;
+          }
+        }
+
+        return next;
       };
 
       const sameEdges = (previous, next) => {
@@ -176,7 +191,7 @@
         node.attr("r", zoomOrKeep(RADIUS));
         svg
           .selectAll("circle")
-          .filter((_d, i, nodes) => select(nodes[i]).attr("active"))
+          .filter((_d, i, nodes) => d3.select(nodes[i]).attr("active"))
           .attr("r", zoomOrKeep(ACTIVE_RADIUS));
 
         document.getElementById("zoom").innerHTML = zoomLevel.toFixed(2);
@@ -193,7 +208,7 @@
               return;
             }
 
-            nodesData = nodes;
+            nodesData = mergeNodes(nodesData, nodes);
             linksData = edges;
             restart();
             break;
