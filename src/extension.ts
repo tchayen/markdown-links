@@ -98,6 +98,9 @@ const watch = (
 
   panel.webview.onDidReceiveMessage(
     (message) => {
+      if (message.type === "ready") {
+        sendGraph();
+      }
       if (message.type === "click") {
         const openPath = vscode.Uri.file(message.payload.path);
         const column = getColumnSetting("openColumn");
@@ -147,11 +150,7 @@ export function activate(context: vscode.ExtensionContext) {
       await parseDirectory(graph, parseFile);
       filterNonExistingEdges(graph);
 
-      const d3Uri = panel.webview.asWebviewUri(
-        vscode.Uri.file(path.join(context.extensionPath, "static", "d3.min.js"))
-      );
-
-      panel.webview.html = await getWebviewContent(context, graph, d3Uri);
+      panel.webview.html = await getWebviewContent(context, panel, graph);
 
       watch(context, panel, graph);
     })
@@ -166,8 +165,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function getWebviewContent(
   context: vscode.ExtensionContext,
-  graph: Graph,
-  d3Uri: vscode.Uri
+  panel: vscode.WebviewPanel,
+  graph: Graph
 ) {
   const webviewPath = vscode.Uri.file(
     path.join(context.extensionPath, "static", "webview.html")
@@ -176,16 +175,19 @@ async function getWebviewContent(
 
   const text = new TextDecoder("utf-8").decode(file);
 
-  const filled = text
-    .replace("--REPLACE-WITH-D3-URI--", d3Uri.toString())
-    .replace(
-      "let nodesData = [];",
-      `let nodesData = ${JSON.stringify(graph.nodes)}`
-    )
-    .replace(
-      "let linksData = [];",
-      `let linksData = ${JSON.stringify(graph.edges)}`
-    );
+  const webviewUri = (fileName: string) =>
+    panel.webview
+      .asWebviewUri(
+        vscode.Uri.file(path.join(context.extensionPath, "static", fileName))
+      )
+      .toString();
+
+  // Basic templating. Will replace {{someScript.js}} with the
+  // appropriate webview URI.
+  const filled = text.replace(/\{\{.*\}\}/g, (match) => {
+    const fileName = match.slice(2, -2).trim();
+    return webviewUri(fileName);
+  });
 
   return filled;
 }
