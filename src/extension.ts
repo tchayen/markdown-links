@@ -1,29 +1,28 @@
 import * as vscode from "vscode";
 import { TextDecoder } from "util";
 import * as path from "path";
-import { parseFile, parseDirectory, learnFileId } from "./parsing";
+import { parseFile, forEachFile, learnFileId } from "./parsing";
 import {
   filterNonExistingEdges,
   getColumnSetting,
   getConfiguration,
-  getFileTypesSetting,
+  getFileGlob,
+  generateBacklinks,
+  id,
 } from "./utils";
-import { Graph } from "./types";
+import { State } from "./types";
 
 const watch = (
   context: vscode.ExtensionContext,
   panel: vscode.WebviewPanel,
-  graph: Graph
+  state: State
 ) => {
   if (vscode.workspace.rootPath === undefined) {
     return;
   }
 
   const watcher = vscode.workspace.createFileSystemWatcher(
-    new vscode.RelativePattern(
-      vscode.workspace.rootPath,
-      `**/*{${getFileTypesSetting().join(",")}}`
-    ),
+    new vscode.RelativePattern(vscode.workspace.rootPath, getFileGlob()),
     false,
     false,
     false
@@ -32,68 +31,75 @@ const watch = (
   const sendGraph = () => {
     panel.webview.postMessage({
       type: "refresh",
-      payload: graph,
+      payload: state,
     });
   };
 
   // Watch file changes in case user adds a link.
   watcher.onDidChange(async (event) => {
-    await parseFile(graph, event.path);
-    filterNonExistingEdges(graph);
+    await parseFile(state, event.path);
+    filterNonExistingEdges(state);
+    generateBacklinks(state);
     sendGraph();
   });
 
   // Watch file creation in case user adds a new file
   watcher.onDidCreate(async (event) => {
-    await parseFile(graph, event.path);
-    filterNonExistingEdges(graph);
+    await parseFile(state, event.path);
+    filterNonExistingEdges(state);
+    generateBacklinks(state);
     sendGraph();
   });
 
   watcher.onDidDelete(async (event) => {
-    const index = graph.nodes.findIndex((node) => node.path === event.path);
-    if (index === -1) {
+    let nodeId = id(event.path);
+    let node = state.graph[nodeId];
+
+    if (!node) {
       return;
     }
 
-    graph.nodes.splice(index, 1);
-    graph.edges = graph.edges.filter(
-      (edge) => edge.source !== event.path && edge.target !== event.path
-    );
+    delete state.graph[nodeId];
+    for (const nid in state.graph) {
+      const n = state.graph[nid];
+      n.links = n.links.filter((link) => link !== nodeId);
+    }
 
     sendGraph();
   });
 
   vscode.workspace.onDidOpenTextDocument(async (event) => {
-    panel.webview.postMessage({
-      type: "fileOpen",
-      payload: { path: event.fileName },
-    });
+    let filePath = event.uri.path.replace(".git", "");
+    let nodeId = id(filePath);
+    if (state.graph[nodeId]) {
+      state.currentNode = nodeId;
+      sendGraph();
+    }
   });
 
   vscode.workspace.onDidRenameFiles(async (event) => {
     for (const file of event.files) {
-      const previous = file.oldUri.path;
+      const prev = file.oldUri.path;
       const next = file.newUri.path;
+      const prevId = id(prev);
+      const nextId = id(next);
 
-      for (const edge of graph.edges) {
-        if (edge.source === previous) {
-          edge.source = next;
-        }
-
-        if (edge.target === previous) {
-          edge.target = next;
-        }
+      if (state.graph[prevId]) {
+        state.graph[nextId] = state.graph[prevId];
+        state.graph[nextId].path = next;
+        state.graph[nextId].id = nextId;
+        delete state.graph[prevId];
       }
 
-      for (const node of graph.nodes) {
-        if (node.path === previous) {
-          node.path = next;
-        }
+      for (const nodeId in state.graph) {
+        const node = state.graph[nodeId];
+        node.links = node.links.map((link) =>
+          link === prevId ? nextId : link
+        );
       }
-
-      sendGraph();
     }
+
+    sendGraph();
   });
 
   panel.webview.onDidReceiveMessage(
@@ -122,6 +128,8 @@ const watch = (
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("markdown-links.showGraph", async () => {
+      const currentFilePath =
+        vscode.window.activeTextEditor?.document?.uri?.path || "";
       const column = getColumnSetting("showColumn");
 
       const panel = vscode.window.createWebviewPanel(
@@ -141,18 +149,20 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const graph: Graph = {
-        nodes: [],
-        edges: [],
-      };
+      const state: State = { graph: {}, currentNode: undefined };
 
-      await parseDirectory(graph, learnFileId);
-      await parseDirectory(graph, parseFile);
-      filterNonExistingEdges(graph);
+      await forEachFile(state, learnFileId);
+      await forEachFile(state, parseFile);
+      filterNonExistingEdges(state);
+      generateBacklinks(state);
 
-      panel.webview.html = await getWebviewContent(context, panel, graph);
+      if (currentFilePath && state.graph[id(currentFilePath)]) {
+        state.currentNode = id(currentFilePath);
+      }
 
-      watch(context, panel, graph);
+      panel.webview.html = await getWebviewContent(context, panel);
+
+      watch(context, panel, state);
     })
   );
 
@@ -165,8 +175,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function getWebviewContent(
   context: vscode.ExtensionContext,
-  panel: vscode.WebviewPanel,
-  graph: Graph
+  panel: vscode.WebviewPanel
 ) {
   const webviewPath = vscode.Uri.file(
     path.join(context.extensionPath, "static", "webview.html")

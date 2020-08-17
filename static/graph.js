@@ -7,9 +7,6 @@ const FONT_BASELINE = 15;
 //const activeNodeColor = "#0050ff";
 //const nodeColor = "#777";
 
-let nodesData = [];
-let linksData = [];
-
 const vscode = acquireVsCodeApi();
 
 const onClick = (d) => {
@@ -77,19 +74,26 @@ const width = Number(svg.attr("width"));
 const height = Number(svg.attr("height"));
 let zoomLevel = 1;
 
-console.log(JSON.stringify({ nodesData, linksData }, null, 2));
+let state = { graph: {}, currentNode: undefined };
+console.log(JSON.stringify(state, null, 2));
+// This is calculated from state
+let d3Data = { nodes: [], edges: [] };
 
 const simulation = d3
-  .forceSimulation(nodesData)
+  .forceSimulation()
   .force("charge", d3.forceManyBody().strength(-300))
   .force(
     "link",
     d3
-      .forceLink(linksData)
+      .forceLink()
       .id((d) => d.id)
       .distance(70)
   )
   .force("center", d3.forceCenter(width / 2, height / 2))
+  // Adjusting the alpha values speeds up the simulation at the cost of "accuracy"
+  // which doesn't really matter too much as we don't show the simulation while it runs
+  .alphaDecay(0.05)
+  .alphaMin(0.01)
   .stop();
 
 const g = svg.append("g");
@@ -125,30 +129,8 @@ window.addEventListener("message", (event) => {
 
   switch (message.type) {
     case "refresh":
-      const { nodes, edges } = message.payload;
-
-      if (sameNodes(nodesData, nodes) && sameEdges(linksData, edges)) {
-        return;
-      }
-
-      nodesData = nodes;
-      linksData = edges;
+      state = message.payload;
       restart();
-      break;
-    case "fileOpen":
-      let path = message.payload.path;
-      if (path.endsWith(".git")) {
-        path = path.slice(0, -4);
-      }
-
-      const fixSlashes = (input) => {
-        const onLocalWindowsFilesystem =
-          navigator.platform == "Win32" && /^\w:\\/.test(input);
-        return onLocalWindowsFilesystem ? input.replace(/\//g, "\\") : input;
-      };
-
-      node.attr("active", (d) => (fixSlashes(d.path) === path ? true : null));
-      text.attr("active", (d) => (fixSlashes(d.path) === path ? true : null));
       break;
   }
 
@@ -157,8 +139,8 @@ window.addEventListener("message", (event) => {
 });
 
 const ticked = () => {
-  document.getElementById("connections").innerHTML = linksData.length;
-  document.getElementById("files").innerHTML = nodesData.length;
+  document.getElementById("connections").innerHTML = d3Data.edges.length;
+  document.getElementById("files").innerHTML = d3Data.nodes.length;
 
   node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
   text.attr("x", (d) => d.x).attr("y", (d) => d.y - FONT_BASELINE / zoomLevel);
@@ -170,35 +152,56 @@ const ticked = () => {
 };
 
 const restart = () => {
-  node = node.data(nodesData, (d) => d.id);
-  node.exit().remove();
+  const { graph, currentNode } = state;
+  simulation.stop();
+
+  // STEP 1: Compute the new node/edge data from the new state
+
+  d3Data.nodes = d3.values(graph);
+  d3Data.edges = d3.merge(
+    d3Data.nodes.map((source) => {
+      return source.links.map((target) => ({
+        source: source.id,
+        target,
+      }));
+    })
+  );
+
+  // STEP 2: Bind the new data to the D3 selectors
+
   node = node
-    .enter()
-    .append("circle")
-    .attr("r", RADIUS)
-    // .attr("fill", (d) => getNodeColor(d))
-    .on("click", onClick)
-    .merge(node);
+    .data(d3Data.nodes, (d) => d.id)
+    .join((enter) =>
+      enter.append("circle").attr("r", RADIUS).on("click", onClick)
+    );
 
-  link = link.data(linksData, (d) => `${d.source.id}-${d.target.id}`);
-  link.exit().remove();
-  link = link.enter().append("line").attr("stroke-width", STROKE).merge(link);
+  link = link
+    .data(d3Data.edges, (d) => [d.source, d.target])
+    .join((enter) => enter.append("line").attr("stroke-width", STROKE));
 
-  text = text.data(nodesData, (d) => d.label);
-  text.exit().remove();
   text = text
-    .enter()
-    .append("text")
-    .text((d) => d.label.replace(/_*/g, ""))
-    .attr("font-size", `${FONT_SIZE}px`)
-    .attr("text-anchor", "middle")
-    .attr("alignment-baseline", "central")
-    // .attr("fill", (d) => getNodeColor(d))
-    .on("click", onClick)
-    .merge(text);
+    .data(d3Data.nodes, (d) => d.label)
+    .join((enter) =>
+      enter
+        .append("text")
+        .text((d) => d.label.replace(/_*/g, ""))
+        .attr("opacity", 1)
+        .attr("font-size", `${FONT_SIZE}px`)
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "central")
+        .on("click", onClick)
+    );
 
-  simulation.nodes(nodesData);
-  simulation.force("link").links(linksData);
+  // STEP 3: Additional modifications to node data (colors, show/hide, etc)
+
+  // Set the current node & label as "active"
+  node.attr("active", (d) => (d.id === currentNode ? true : null));
+  text.attr("active", (d) => (d.id === currentNode ? true : null));
+
+  // STEP 4: Restart the simulation
+
+  simulation.nodes(d3Data.nodes);
+  simulation.force("link").links(d3Data.edges);
   simulation.alpha(1).restart();
   simulation.stop();
 
@@ -217,6 +220,5 @@ const zoomHandler = d3
   .on("zoom", resize);
 
 zoomHandler(svg);
-restart();
 
 vscode.postMessage({ type: "ready" });

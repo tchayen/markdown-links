@@ -7,11 +7,18 @@ export type Node = {
   id: string;
   path: string;
   label: string;
+  links: string[];
+  backlinks: string[];
 };
 
 export type Graph = {
   nodes: Node[];
   edges: Edge[];
+};
+
+export type State = {
+  graph: Record<string, Node>;
+  currentNode?: string;
 };
 
 export type MarkdownNode = {

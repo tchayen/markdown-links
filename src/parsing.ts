@@ -4,16 +4,9 @@ import * as unified from "unified";
 import * as markdown from "remark-parse";
 import * as wikiLinkPlugin from "remark-wiki-link";
 import * as frontmatter from "remark-frontmatter";
-import { MarkdownNode, Graph } from "./types";
+import { MarkdownNode, State } from "./types";
 import { TextDecoder } from "util";
-import {
-  findTitle,
-  findLinks,
-  id,
-  FILE_ID_REGEXP,
-  getFileTypesSetting,
-  getConfiguration,
-} from "./utils";
+import { findTitle, findLinks, id, FILE_ID_REGEXP, getFileGlob } from "./utils";
 import { basename } from "path";
 
 let idToPath: Record<string, string> = {};
@@ -32,35 +25,40 @@ const parser = unified()
   .use(wikiLinkPlugin, { pageResolver: idResolver })
   .use(frontmatter);
 
-export const parseFile = async (graph: Graph, filePath: string) => {
+export const parseFile = async (state: State, filePath: string) => {
   filePath = path.normalize(filePath);
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
   const ast: MarkdownNode = parser.parse(content);
 
   let title: string | null = findTitle(ast);
-
-  const index = graph.nodes.findIndex((node) => node.path === filePath);
+  let nodeId = id(filePath);
+  let node = state.graph[nodeId];
 
   if (!title) {
-    if (index !== -1) {
-      graph.nodes.splice(index, 1);
+    if (node) {
+      delete state.graph[nodeId];
     }
 
     return;
   }
 
-  if (index !== -1) {
-    graph.nodes[index].label = title;
+  if (node) {
+    node.label = title;
   } else {
-    graph.nodes.push({ id: id(filePath), path: filePath, label: title });
+    node = {
+      id: nodeId,
+      path: filePath,
+      label: title,
+      links: [],
+      backlinks: [],
+    };
+    state.graph[nodeId] = node;
   }
-
-  // Remove edges based on an old version of this file.
-  graph.edges = graph.edges.filter((edge) => edge.source !== id(filePath));
 
   const links = findLinks(ast);
   const parentDirectory = filePath.split(path.sep).slice(0, -1).join(path.sep);
+  let linkSet = new Set<string>();
 
   for (const link of links) {
     let target = path.normalize(link);
@@ -68,8 +66,10 @@ export const parseFile = async (graph: Graph, filePath: string) => {
       target = path.normalize(`${parentDirectory}/${link}`);
     }
 
-    graph.edges.push({ source: id(filePath), target: id(target) });
+    linkSet.add(id(target));
   }
+
+  node.links = Array.from(linkSet);
 };
 
 export const findFileId = async (filePath: string): Promise<string | null> => {
@@ -80,7 +80,7 @@ export const findFileId = async (filePath: string): Promise<string | null> => {
   return match ? match[1] : null;
 };
 
-export const learnFileId = async (_graph: Graph, filePath: string) => {
+export const learnFileId = async (_state: State, filePath: string) => {
   const id = await findFileId(filePath);
   if (id !== null) {
     idToPath[id] = filePath;
@@ -93,24 +93,20 @@ export const learnFileId = async (_graph: Graph, filePath: string) => {
   idToPath[fileNameWithoutExt] = filePath;
 };
 
-export const parseDirectory = async (
-  graph: Graph,
-  fileCallback: (graph: Graph, path: string) => Promise<void>
+export const forEachFile = async (
+  state: State,
+  fileCallback: (state: State, path: string) => Promise<void>
 ) => {
   // `findFiles` is used here since it respects files excluded by either the
   // global or workspace level files.exclude config option.
-  const files = await vscode.workspace.findFiles(
-    `**/*{${(getFileTypesSetting() as string[]).map((f) => `.${f}`).join(",")}}`
-  );
+  const files = await vscode.workspace.findFiles(getFileGlob());
 
-  const promises: Promise<void>[] = [];
-
-  for (const file of files) {
+  const promises = files.map(async (file: vscode.Uri) => {
     const hiddenFile = path.basename(file.path).startsWith(".");
     if (!hiddenFile) {
-      promises.push(fileCallback(graph, file.path));
+      return fileCallback(state, file.path);
     }
-  }
+  });
 
   await Promise.all(promises);
 };

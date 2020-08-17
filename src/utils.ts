@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as md5 from "md5";
 import { extname } from "path";
-import { MarkdownNode, Graph } from "./types";
+import { MarkdownNode, Graph, State } from "./types";
 
 export const findLinks = (ast: MarkdownNode): string[] => {
   if (ast.type === "link" || ast.type === "definition") {
@@ -91,9 +91,10 @@ export const getFileIdRegexp = () => {
 
 export const FILE_ID_REGEXP = getFileIdRegexp();
 
-export const getFileTypesSetting = () => {
+export const getFileGlob = () => {
   const DEFAULT_VALUE = ["md"];
-  return getConfiguration("fileTypes") || DEFAULT_VALUE;
+  const fileTypes = getConfiguration("fileTypes") || DEFAULT_VALUE;
+  return `**/*.{${fileTypes.join(",")}}`;
 };
 
 export const getDot = (graph: Graph) => `digraph g {
@@ -103,11 +104,22 @@ export const getDot = (graph: Graph) => `digraph g {
   ${graph.edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
   }`;
 
-export const exists = (graph: Graph, id: string) =>
-  !!graph.nodes.find((node) => node.id === id);
+export const filterNonExistingEdges = (state: State) => {
+  for (const nodeId in state.graph) {
+    const node = state.graph[nodeId];
+    node.links = node.links.filter((link) => link in state.graph);
+  }
+};
 
-export const filterNonExistingEdges = (graph: Graph) => {
-  graph.edges = graph.edges.filter(
-    (edge) => exists(graph, edge.source) && exists(graph, edge.target)
-  );
+const addUnique = <T>(arr: T[], item: T): T[] =>
+  Array.from(new Set(arr).add(item));
+
+export const generateBacklinks = (state: State) => {
+  for (const nodeId in state.graph) {
+    const node = state.graph[nodeId];
+    for (const link of node.links) {
+      const linkedNode = state.graph[link];
+      linkedNode.backlinks = addUnique(linkedNode.backlinks, nodeId);
+    }
+  }
 };
