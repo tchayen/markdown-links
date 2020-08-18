@@ -1,5 +1,6 @@
-const RADIUS = 4;
-const ACTIVE_RADIUS = 6;
+const MINIMAL_NODE_SIZE = 4
+const MAX_NODE_SIZE = 20;
+const ACTIVE_RADIUS_FACTOR = 1.5;
 const STROKE = 1;
 const FONT_SIZE = 14;
 const TICKS = 5000;
@@ -9,8 +10,21 @@ const FONT_BASELINE = 15;
 
 let nodesData = [];
 let linksData = [];
+const nodeSize = {}
 
 const vscode = acquireVsCodeApi();
+
+const updateNodeSize = () => {
+  nodesData.forEach(el => {
+    let weight = 2 * Math.sqrt(linksData.filter(l => l.source === el.id || l.target === el.id).length + 1)
+    if (weight < MINIMAL_NODE_SIZE) {
+      weight = MINIMAL_NODE_SIZE
+    }else if (weight > MAX_NODE_SIZE){
+      weight = MAX_NODE_SIZE 
+    } 
+    nodeSize[el.id] = weight
+  })
+}
 
 const onClick = (d) => {
   vscode.postMessage({ type: "click", payload: d });
@@ -81,15 +95,18 @@ console.log(JSON.stringify({ nodesData, linksData }, null, 2));
 
 const simulation = d3
   .forceSimulation(nodesData)
+  .force("forceX", d3.forceX().strength(.15).x(width / 2))
+  .force("forceY", d3.forceY().strength(.15).y(height / 2))
   .force("charge", d3.forceManyBody().strength(-300))
   .force(
     "link",
     d3
       .forceLink(linksData)
       .id((d) => d.id)
-      .distance(70)
+      .distance(200)
   )
   .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collision", d3.forceCollide().radius(80))
   .stop();
 
 const g = svg.append("g");
@@ -109,9 +126,11 @@ const resize = () => {
   const font = Math.max(Math.round(zoomOrKeep(FONT_SIZE)), 1);
 
   text.attr("font-size", `${font}px`);
-  text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE));
+  text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE + nodeSize[d.id]));
   link.attr("stroke-width", zoomOrKeep(STROKE));
-  node.attr("r", zoomOrKeep(RADIUS));
+  node.attr("r", (d) => {
+    return zoomOrKeep(nodeSize[d.id])
+  })  
   svg
     .selectAll("circle")
     .filter((_d, i, nodes) => d3.select(nodes[i]).attr("active"))
@@ -161,7 +180,7 @@ const ticked = () => {
   document.getElementById("files").innerHTML = nodesData.length;
 
   node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
-  text.attr("x", (d) => d.x).attr("y", (d) => d.y - FONT_BASELINE / zoomLevel);
+  text.attr("x", (d) => d.x).attr("y", (d) => d.y - (FONT_BASELINE - nodeSize[d.id]) / zoomLevel);
   link
     .attr("x1", (d) => d.source.x)
     .attr("y1", (d) => d.source.y)
@@ -170,12 +189,15 @@ const ticked = () => {
 };
 
 const restart = () => {
+  updateNodeSize()
   node = node.data(nodesData, (d) => d.id);
   node.exit().remove();
   node = node
     .enter()
     .append("circle")
-    .attr("r", RADIUS)
+    .attr("r", (d) => {
+      return nodeSize[d.id]
+    })
     // .attr("fill", (d) => getNodeColor(d))
     .on("click", onClick)
     .merge(node);
