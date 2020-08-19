@@ -5,8 +5,6 @@ const STROKE = 1;
 const FONT_SIZE = 20;
 const TICKS = 5000;
 const FONT_BASELINE = 15;
-//const activeNodeColor = "#0050ff";
-//const nodeColor = "#777";
 
 let nodesData = [];
 let linksData = [];
@@ -111,11 +109,6 @@ const sameEdges = (previous, next) => {
   return true;
 };
 
-// const getNodeColor = (node, active) => {
-//   console.log(node, active);
-//   return node.path === active ? activeNodeColor : nodeColor;
-// };
-
 const element = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 element.setAttribute("width", window.innerWidth);
 element.setAttribute("height", window.innerHeight);
@@ -133,19 +126,17 @@ const width = Number(svg.attr("width"));
 const height = Number(svg.attr("height"));
 let zoomLevel = 1;
 
-console.log(JSON.stringify({ nodesData, linksData }, null, 2));
-
 const simulation = d3
   .forceSimulation(nodesData)
-  .force("forceX", d3.forceX().strength(.15).x(width / 2))
-  .force("forceY", d3.forceY().strength(.15).y(height / 2))
-  .force("charge", d3.forceManyBody().strength(-300))
+  .force("forceX", d3.forceX().x(width / 2))
+  .force("forceY", d3.forceY().y(height / 2))
+  .force("charge", d3.forceManyBody())
   .force(
     "link",
     d3
       .forceLink(linksData)
       .id((d) => d.id)
-      .distance(200)
+      .distance(70)
   )
   .force("center", d3.forceCenter(width / 2, height / 2))
   .force("collision", d3.forceCollide().radius(80))
@@ -240,7 +231,6 @@ const restart = () => {
     .attr("r", (d) => {
       return nodeSize[d.id]
     })
-    // .attr("fill", (d) => getNodeColor(d))
     .on("click", onClick)
     .on("mouseover", mouseover)
     .on("mouseout", mouseout)
@@ -259,7 +249,6 @@ const restart = () => {
     .attr("font-size", `${FONT_SIZE}px`)
     .attr("text-anchor", "middle")
     .attr("alignment-baseline", "central")
-    // .attr("fill", (d) => getNodeColor(d))
     .on("click", onClick)
     .on("mouseover", mouseover)
     .on("mouseout", mouseout)
@@ -280,8 +269,6 @@ const restart = () => {
 const zoomHandler = d3
   .zoom()
   .scaleExtent([0.2, 3])
-  //.translateExtent([[0,0], [width, height]])
-  //.extent([[0, 0], [width, height]])
   .on("zoom", resize);
 
 zoomHandler(svg);
