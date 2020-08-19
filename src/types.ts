@@ -26,5 +26,5 @@ export type MarkdownNode = {
 };
 
 export type TemplateVariables = {
-  graphType: string
+  graphPath: string
 }

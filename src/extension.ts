@@ -154,7 +154,7 @@ export function activate(context: vscode.ExtensionContext) {
       filterNonExistingEdges(graph);
 
       const templateVariables: TemplateVariables = {
-        graphType: `{{${path.join('graphs', getConfiguration("graphType") + ".js")}}}`
+        graphPath: `{{${path.join('graphs', getConfiguration("graphType") + ".js")}}}`
       }
 
       panel.webview.html = await getWebviewContent(context, panel, graph, templateVariables);
