@@ -24,3 +24,7 @@ export type MarkdownNode = {
     permalink?: string;
   };
 };
+
+export type TemplateVariables = {
+  graphType: string
+}

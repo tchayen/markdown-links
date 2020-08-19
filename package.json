@@ -55,6 +55,15 @@
           "type": "boolean",
           "default": false,
           "description": "Should Markdown Links automatically start when a markdown file is opened."
+        },
+        "markdown-links.graphType": {
+          "type": "string",
+          "enum": [
+            "default",
+            "obsidian"
+          ],
+          "default": "default",
+          "description": "Choose type of graph appearance."
         }
       }
     }

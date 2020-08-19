@@ -65,6 +65,11 @@ Controls in which column should clicked files open. Refer to [Column values](###
 
 A [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) used to find the file ID for use in wiki-style links.
 
+### `markdown-links.graphType`
+
+- `default` (**default**)
+- `obsidian` - obsidian like graph
+
 ## Roadmap
 
 Plans for development are roughly summarized in the [Roadmap](docs/roadmap.md).
