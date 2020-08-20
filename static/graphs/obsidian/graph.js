@@ -1,4 +1,4 @@
-const MINIMAL_NODE_SIZE = 8
+const MINIMAL_NODE_SIZE = 8;
 const MAX_NODE_SIZE = 24;
 const ACTIVE_RADIUS_FACTOR = 1.5;
 const STROKE = 1;
@@ -8,67 +8,74 @@ const FONT_BASELINE = 15;
 
 let nodesData = [];
 let linksData = [];
-const nodeSize = {}
+const nodeSize = {};
 
 const vscode = acquireVsCodeApi();
 
 const updateNodeSize = () => {
-  nodesData.forEach(el => {
-    let weight = 3 * Math.sqrt(linksData.filter(l => l.source === el.id || l.target === el.id).length + 1)
+  nodesData.forEach((el) => {
+    let weight =
+      3 *
+      Math.sqrt(
+        linksData.filter((l) => l.source === el.id || l.target === el.id)
+          .length + 1
+      );
     if (weight < MINIMAL_NODE_SIZE) {
-      weight = MINIMAL_NODE_SIZE
-    }else if (weight > MAX_NODE_SIZE){
-      weight = MAX_NODE_SIZE 
-    } 
-    nodeSize[el.id] = weight
-  })
-}
+      weight = MINIMAL_NODE_SIZE;
+    } else if (weight > MAX_NODE_SIZE) {
+      weight = MAX_NODE_SIZE;
+    }
+    nodeSize[el.id] = weight;
+  });
+};
 
 const onClick = (d) => {
   vscode.postMessage({ type: "click", payload: d });
 };
 
-const mouseover = function (d) {
-  const relatedNodesSet = new Set()
-  linksData.filter(n => n.target.id == d.id || n.source.id == d.id).forEach(n =>{
-    relatedNodesSet.add(n.target.id);
-    relatedNodesSet.add(n.source.id);
-  });
+const onMouseover = function (d) {
+  const relatedNodesSet = new Set();
+  linksData
+    .filter((n) => n.target.id == d.id || n.source.id == d.id)
+    .forEach((n) => {
+      relatedNodesSet.add(n.target.id);
+      relatedNodesSet.add(n.source.id);
+    });
 
-  node.attr('class', (node_d) => {
+  node.attr("class", (node_d) => {
     if (node_d.id !== d.id && !relatedNodesSet.has(node_d.id)) {
-     return 'inactive' 
+      return "inactive";
     }
-    return ''
+    return "";
   });
 
-  link.attr('class', (link_d) => {
-    if (link_d.source.id !== d.id && link_d.target.id !== d.id){
-      return 'inactive'
+  link.attr("class", (link_d) => {
+    if (link_d.source.id !== d.id && link_d.target.id !== d.id) {
+      return "inactive";
     }
-    return ''
+    return "";
   });
 
   link.attr("stroke-width", (link_d) => {
-    if (link_d.source.id === d.id || link_d.target.id === d.id){
-      return STROKE * 4
+    if (link_d.source.id === d.id || link_d.target.id === d.id) {
+      return STROKE * 4;
     }
-    return STROKE
+    return STROKE;
   });
   text.attr("class", (text_d) => {
-    if (text_d.id !== d.id && !relatedNodesSet.has(text_d.id)){
-      return 'inactive'
+    if (text_d.id !== d.id && !relatedNodesSet.has(text_d.id)) {
+      return "inactive";
     }
-    return ''
-  })
-}
+    return "";
+  });
+};
 
-const mouseout = function (d) {
-  node.attr('class', '')
-  link.attr('class', '')
-  text.attr('class', '')
+const onMouseout = function (d) {
+  node.attr("class", "");
+  link.attr("class", "");
+  text.attr("class", "");
   link.attr("stroke-width", STROKE);
-}
+};
 
 const sameNodes = (previous, next) => {
   if (next.length !== previous.length) {
@@ -162,8 +169,8 @@ const resize = () => {
   text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE + nodeSize[d.id]));
   link.attr("stroke-width", zoomOrKeep(STROKE));
   node.attr("r", (d) => {
-    return zoomOrKeep(nodeSize[d.id])
-  })  
+    return zoomOrKeep(nodeSize[d.id]);
+  });
   svg
     .selectAll("circle")
     .filter((_d, i, nodes) => d3.select(nodes[i]).attr("active"))
@@ -213,7 +220,9 @@ const ticked = () => {
   document.getElementById("files").innerHTML = nodesData.length;
 
   node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
-  text.attr("x", (d) => d.x).attr("y", (d) => d.y - (FONT_BASELINE - nodeSize[d.id]) / zoomLevel);
+  text
+    .attr("x", (d) => d.x)
+    .attr("y", (d) => d.y - (FONT_BASELINE - nodeSize[d.id]) / zoomLevel);
   link
     .attr("x1", (d) => d.source.x)
     .attr("y1", (d) => d.source.y)
@@ -222,18 +231,18 @@ const ticked = () => {
 };
 
 const restart = () => {
-  updateNodeSize()
+  updateNodeSize();
   node = node.data(nodesData, (d) => d.id);
   node.exit().remove();
   node = node
     .enter()
     .append("circle")
     .attr("r", (d) => {
-      return nodeSize[d.id]
+      return nodeSize[d.id];
     })
     .on("click", onClick)
-    .on("mouseover", mouseover)
-    .on("mouseout", mouseout)
+    .on("mouseover", onMouseover)
+    .on("mouseout", onMouseout)
     .merge(node);
 
   link = link.data(linksData, (d) => `${d.source.id}-${d.target.id}`);
@@ -250,8 +259,8 @@ const restart = () => {
     .attr("text-anchor", "middle")
     .attr("alignment-baseline", "central")
     .on("click", onClick)
-    .on("mouseover", mouseover)
-    .on("mouseout", mouseout)
+    .on("mouseover", onMouseover)
+    .on("mouseout", onMouseout)
     .merge(text);
 
   simulation.nodes(nodesData);
@@ -266,10 +275,7 @@ const restart = () => {
   ticked();
 };
 
-const zoomHandler = d3
-  .zoom()
-  .scaleExtent([0.2, 3])
-  .on("zoom", resize);
+const zoomHandler = d3.zoom().scaleExtent([0.2, 3]).on("zoom", resize);
 
 zoomHandler(svg);
 restart();

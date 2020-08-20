@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--vscode-editor-background);
+}
+
+.buttons {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 16px;
+  cursor: default;
+}
+
+.buttons span > span {
+  color: var(--vscode-foreground);
+}

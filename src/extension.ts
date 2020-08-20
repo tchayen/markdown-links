@@ -8,10 +8,7 @@ import {
   getConfiguration,
   getFileTypesSetting,
 } from "./utils";
-import { 
-  Graph,
-  TemplateVariables
-} from "./types";
+import { Graph } from "./types";
 
 const watch = (
   context: vscode.ExtensionContext,
@@ -153,11 +150,7 @@ export function activate(context: vscode.ExtensionContext) {
       await parseDirectory(graph, parseFile);
       filterNonExistingEdges(graph);
 
-      const templateVariables: TemplateVariables = {
-        graphPath: `{{${path.join('graphs', getConfiguration("graphType") + ".js")}}}`
-      }
-
-      panel.webview.html = await getWebviewContent(context, panel, graph, templateVariables);
+      panel.webview.html = await getWebviewContent(context, panel);
 
       watch(context, panel, graph);
     })
@@ -172,9 +165,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function getWebviewContent(
   context: vscode.ExtensionContext,
-  panel: vscode.WebviewPanel,
-  graph: Graph,
-  templateVariables: TemplateVariables
+  panel: vscode.WebviewPanel
 ) {
   const webviewPath = vscode.Uri.file(
     path.join(context.extensionPath, "static", "webview.html")
@@ -189,12 +180,17 @@ async function getWebviewContent(
         vscode.Uri.file(path.join(context.extensionPath, "static", fileName))
       )
       .toString();
-  
-  // replace ${name} with given variable
-  let textWithVariables = text
-  for (const key in templateVariables) {
-    textWithVariables = textWithVariables.replace(`\${${key}}`, templateVariables[key])
-  }
+
+  const graphDirectory = path.join("graphs", getConfiguration("graphType"));
+  const textWithVariables = text
+    .replace(
+      "${graphPath}",
+      "{{" + path.join(graphDirectory, "graph.js") + "}}"
+    )
+    .replace(
+      "${graphStylesPath}",
+      "{{" + path.join(graphDirectory, "graph.css") + "}}"
+    );
 
   // Basic templating. Will replace {{someScript.js}} with the
   // appropriate webview URI.
