@@ -61,6 +61,7 @@ const watch = (
       (edge) => edge.source !== event.path && edge.target !== event.path
     );
 
+    filterNonExistingEdges(graph);
     sendGraph();
   });
 
