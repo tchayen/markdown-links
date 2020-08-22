@@ -62,6 +62,7 @@ const watch = (
       (edge) => edge.source !== filePath && edge.target !== filePath
     );
 
+    filterNonExistingEdges(graph);
     sendGraph();
   });
 
