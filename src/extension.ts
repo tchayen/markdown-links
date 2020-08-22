@@ -51,14 +51,15 @@ const watch = (
   });
 
   watcher.onDidDelete(async (event) => {
-    const index = graph.nodes.findIndex((node) => node.path === event.path);
+    const filePath = path.normalize(event.path)
+    const index = graph.nodes.findIndex((node) => node.path === filePath);
     if (index === -1) {
       return;
     }
 
     graph.nodes.splice(index, 1);
     graph.edges = graph.edges.filter(
-      (edge) => edge.source !== event.path && edge.target !== event.path
+      (edge) => edge.source !== filePath && edge.target !== filePath
     );
 
     sendGraph();
@@ -73,8 +74,8 @@ const watch = (
 
   vscode.workspace.onDidRenameFiles(async (event) => {
     for (const file of event.files) {
-      const previous = file.oldUri.path;
-      const next = file.newUri.path;
+      const previous = path.normalize(file.oldUri.path);
+      const next = path.normalize(file.newUri.path);
 
       for (const edge of graph.edges) {
         if (edge.source === previous) {
