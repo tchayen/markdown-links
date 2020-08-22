@@ -1,0 +1,25 @@
+.links line {
+  stroke: var(--vscode-editor-foreground);
+  opacity: 0.5;
+}
+
+.nodes circle {
+  cursor: pointer;
+  fill: var(--vscode-editor-foreground);
+  transition: all 0.15s ease-out;
+}
+
+.text text {
+  cursor: pointer;
+  fill: var(--vscode-editor-foreground);
+}
+.nodes [active],
+.text [active] {
+  cursor: pointer;
+  fill: var(--vscode-textLink-foreground);
+}
+
+.inactive {
+  opacity: 0.1;
+  transition: all 0.15s ease-out;
+}

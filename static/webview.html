@@ -2,49 +2,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background-color: var(--vscode-editor-background);
-      }
-
-      .links line {
-        stroke: var(--vscode-editor-foreground);
-        opacity: 0.5;
-      }
-
-      .nodes circle {
-        cursor: pointer;
-        fill: var(--vscode-editor-foreground);
-        transition: all 0.15s ease-out;
-      }
-
-      .text text {
-        cursor: pointer;
-        fill: var(--vscode-editor-foreground);
-      }
-      .nodes [active],
-      .text [active] {
-        cursor: pointer;
-        fill: var(--vscode-textLink-foreground);
-      }
-
-      .buttons {
-        position: absolute;
-        bottom: 0;
-        right: 0;
-        display: flex;
-        flex-direction: column;
-        margin: 16px;
-        cursor: default;
-      }
-
-      .buttons span > span {
-        color: var(--vscode-foreground);
-      }
-    </style>
+    <link rel="stylesheet" href="{{main.css}}">
+    <link rel="stylesheet" href="${graphStylesPath}">
     <script src="{{d3.min.js}}"></script>
   </head>
   <body>
@@ -53,6 +12,6 @@
       <span><span id="connections">0</span> links</span>
       <span><span id="zoom">1.00</span>x</span>
     </div>
-    <script src="{{graph.js}}"></script>
+    <script src="${graphPath}"></script>
   </body>
 </html>

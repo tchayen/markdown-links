@@ -152,7 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
       await parseDirectory(graph, parseFile);
       filterNonExistingEdges(graph);
 
-      panel.webview.html = await getWebviewContent(context, panel, graph);
+      panel.webview.html = await getWebviewContent(context, panel);
 
       watch(context, panel, graph);
     })
@@ -167,8 +167,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 async function getWebviewContent(
   context: vscode.ExtensionContext,
-  panel: vscode.WebviewPanel,
-  graph: Graph
+  panel: vscode.WebviewPanel
 ) {
   const webviewPath = vscode.Uri.file(
     path.join(context.extensionPath, "static", "webview.html")
@@ -184,9 +183,20 @@ async function getWebviewContent(
       )
       .toString();
 
+  const graphDirectory = path.join("graphs", getConfiguration("graphType"));
+  const textWithVariables = text
+    .replace(
+      "${graphPath}",
+      "{{" + path.join(graphDirectory, "graph.js") + "}}"
+    )
+    .replace(
+      "${graphStylesPath}",
+      "{{" + path.join(graphDirectory, "graph.css") + "}}"
+    );
+
   // Basic templating. Will replace {{someScript.js}} with the
   // appropriate webview URI.
-  const filled = text.replace(/\{\{.*\}\}/g, (match) => {
+  const filled = textWithVariables.replace(/\{\{.*\}\}/g, (match) => {
     const fileName = match.slice(2, -2).trim();
     return webviewUri(fileName);
   });
