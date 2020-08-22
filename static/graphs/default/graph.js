@@ -4,8 +4,6 @@ const STROKE = 1;
 const FONT_SIZE = 14;
 const TICKS = 5000;
 const FONT_BASELINE = 15;
-//const activeNodeColor = "#0050ff";
-//const nodeColor = "#777";
 
 let nodesData = [];
 let linksData = [];
@@ -54,11 +52,6 @@ const sameEdges = (previous, next) => {
 
   return true;
 };
-
-// const getNodeColor = (node, active) => {
-//   console.log(node, active);
-//   return node.path === active ? activeNodeColor : nodeColor;
-// };
 
 const element = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 element.setAttribute("width", window.innerWidth);
@@ -152,7 +145,7 @@ window.addEventListener("message", (event) => {
       break;
   }
 
-  // Resize to update size of active node
+  // Resize to update size of active node.
   resize();
 });
 
@@ -176,7 +169,6 @@ const restart = () => {
     .enter()
     .append("circle")
     .attr("r", RADIUS)
-    // .attr("fill", (d) => getNodeColor(d))
     .on("click", onClick)
     .merge(node);
 
@@ -193,7 +185,6 @@ const restart = () => {
     .attr("font-size", `${FONT_SIZE}px`)
     .attr("text-anchor", "middle")
     .attr("alignment-baseline", "central")
-    // .attr("fill", (d) => getNodeColor(d))
     .on("click", onClick)
     .merge(text);
 
@@ -209,12 +200,7 @@ const restart = () => {
   ticked();
 };
 
-const zoomHandler = d3
-  .zoom()
-  .scaleExtent([0.2, 3])
-  //.translateExtent([[0,0], [width, height]])
-  //.extent([[0, 0], [width, height]])
-  .on("zoom", resize);
+const zoomHandler = d3.zoom().scaleExtent([0.2, 3]).on("zoom", resize);
 
 zoomHandler(svg);
 restart();

@@ -5,7 +5,7 @@ import { MarkdownNode, Graph } from "./types";
 
 export const findLinks = (ast: MarkdownNode): string[] => {
   if (ast.type === "link" || ast.type === "definition") {
-    // ignore empty, anchor and web links
+    // Ignore empty, anchor and web links.
     if (
       !ast.url ||
       ast.url.startsWith("#") ||
@@ -53,7 +53,7 @@ export const findTitle = (ast: MarkdownNode): string | null => {
 };
 
 export const id = (path: string): string => {
-  // Extracting file name without extension
+  // Extracting file name without extension.
   return md5(path.substring(0, path.length - extname(path).length));
 };
 

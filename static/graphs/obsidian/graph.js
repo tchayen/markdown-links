@@ -211,7 +211,7 @@ window.addEventListener("message", (event) => {
       break;
   }
 
-  // Resize to update size of active node
+  // Resize to update size of active node.
   resize();
 });
 
