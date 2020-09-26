@@ -165,7 +165,7 @@ const resize = () => {
 
   const font = Math.max(Math.round(zoomOrKeep(FONT_SIZE)), 1);
 
-  text.attr("font-size", `${font}px`);
+  text.attr("font-size", (d) => nodeSize[d.id]);
   text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE + nodeSize[d.id]));
   link.attr("stroke-width", zoomOrKeep(STROKE));
   node.attr("r", (d) => {
