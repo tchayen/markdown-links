@@ -74,6 +74,10 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
   nine: 9,
 };
 
+export const getTitleMaxLength = () => {
+  return getConfiguration("titleMaxLength");
+}
+
 export const getColumnSetting = (key: string) => {
   const column = getConfiguration(key);
   return settingToValue[column] || vscode.ViewColumn.One;

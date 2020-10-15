@@ -13,6 +13,7 @@ import {
   FILE_ID_REGEXP,
   getFileTypesSetting,
   getConfiguration,
+  getTitleMaxLength,
 } from "./utils";
 import { basename } from "path";
 
@@ -48,6 +49,11 @@ export const parseFile = async (graph: Graph, filePath: string) => {
     }
 
     return;
+  }
+
+  const titleMaxLength = getTitleMaxLength();
+  if (titleMaxLength > 0 && title.length > titleMaxLength) {
+    title = title.substr(0, titleMaxLength).concat("...");
   }
 
   if (index !== -1) {
