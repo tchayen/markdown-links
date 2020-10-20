@@ -70,6 +70,24 @@ A [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/G
 - `default` (**default**)
 - `obsidian` - obsidian like graph
 
+### `markdown-links.titleMaxLength`
+
+The maximum title length before being abbreviated. Set to 0 or less to disable.
+
+#### Example
+
+The sentence:
+
+```
+Type checking a multithreaded functional language with session types
+```
+
+When abbreviated for a maximum length of 24, becomes:
+
+```
+Type checking a multithr...
+```
+
 ## Roadmap
 
 Plans for development are roughly summarized in the [Roadmap](docs/roadmap.md).

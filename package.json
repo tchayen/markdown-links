@@ -64,6 +64,11 @@
           ],
           "default": "default",
           "description": "Choose type of graph appearance."
+        },
+        "markdown-links.titleMaxLength": {
+          "type": "number",
+          "default": 24,
+          "description": "The maximum title length before being abbreviated. Set to 0 or less to disable."
         }
       }
     }

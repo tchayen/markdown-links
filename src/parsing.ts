@@ -13,6 +13,7 @@ import {
   FILE_ID_REGEXP,
   getFileTypesSetting,
   getConfiguration,
+  getTitleMaxLength,
 } from "./utils";
 import { basename } from "path";
 

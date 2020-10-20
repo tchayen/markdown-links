@@ -46,7 +46,14 @@ export const findTitle = (ast: MarkdownNode): string | null => {
       child.children &&
       child.children.length > 0
     ) {
-      return child.children[0].value!;
+      let title = child.children[0].value!
+
+      const titleMaxLength = getTitleMaxLength();
+      if (titleMaxLength > 0 && title.length > titleMaxLength) {
+        title = title.substr(0, titleMaxLength).concat("...");
+      }
+
+      return title;
     }
   }
   return null;
@@ -73,6 +80,10 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
   eight: 8,
   nine: 9,
 };
+
+export const getTitleMaxLength = () => {
+  return getConfiguration("titleMaxLength");
+}
 
 export const getColumnSetting = (key: string) => {
   const column = getConfiguration(key);
