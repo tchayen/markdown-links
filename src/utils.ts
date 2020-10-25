@@ -46,7 +46,7 @@ export const findTitle = (ast: MarkdownNode): string | null => {
       child.children &&
       child.children.length > 0
     ) {
-      let title = child.children[0].value!
+      let title = child.children[0].value!;
 
       const titleMaxLength = getTitleMaxLength();
       if (titleMaxLength > 0 && title.length > titleMaxLength) {
@@ -83,7 +83,7 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
 
 export const getTitleMaxLength = () => {
   return getConfiguration("titleMaxLength");
-}
+};
 
 export const getColumnSetting = (key: string) => {
   const column = getConfiguration(key);
@@ -102,10 +102,20 @@ export const getFileIdRegexp = () => {
 
 export const FILE_ID_REGEXP = getFileIdRegexp();
 
-export const getFileSearchExpression = () => {
+export const getFileSearchExpression = (): string => {
+  const configFileTypes: string[] = getConfiguration("fileTypes");
+  const searchGlob: string = getConfiguration("searchGlob");
+  if (searchGlob) {
+    if (configFileTypes) {
+      vscode.window.showWarningMessage(
+        "You have both fileTypes and searchGlob settings defined, searchGlob is taking precedence."
+      );
+    }
+    return searchGlob;
+  }
   const DEFAULT_VALUE = ["md"];
-  const fileTypes = getConfiguration("fileTypes") || DEFAULT_VALUE;
-  return `**/*{${(fileTypes as string[]).map((f) => `.${f}`).join(",")}}`;
+  const fileTypes = configFileTypes || DEFAULT_VALUE;
+  return `**/*{${fileTypes.map((f) => `.${f}`).join(",")}}`;
 };
 
 export const getDot = (graph: Graph) => `digraph g {
