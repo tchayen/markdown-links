@@ -6,7 +6,7 @@ import {
   filterNonExistingEdges,
   getColumnSetting,
   getConfiguration,
-  getFileTypesSetting,
+  getFileSearchExpression,
 } from "./utils";
 import { Graph } from "./types";
 
@@ -22,7 +22,7 @@ const watch = (
   const watcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(
       vscode.workspace.rootPath,
-      `**/*{${getFileTypesSetting().join(",")}}`
+      getFileSearchExpression()
     ),
     false,
     false,

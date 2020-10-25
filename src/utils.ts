@@ -102,9 +102,10 @@ export const getFileIdRegexp = () => {
 
 export const FILE_ID_REGEXP = getFileIdRegexp();
 
-export const getFileTypesSetting = () => {
+export const getFileSearchExpression = () => {
   const DEFAULT_VALUE = ["md"];
-  return getConfiguration("fileTypes") || DEFAULT_VALUE;
+  const fileTypes = getConfiguration("fileTypes") || DEFAULT_VALUE;
+  return `**/*{${(fileTypes as string[]).map((f) => `.${f}`).join(",")}}`;
 };
 
 export const getDot = (graph: Graph) => `digraph g {
