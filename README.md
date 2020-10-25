@@ -65,6 +65,10 @@ Controls in which column should clicked files open. Refer to [Column values](###
 
 A [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions) used to find the file ID for use in wiki-style links.
 
+### `markdown-links.searchGlob`
+
+[Glob pattern](https://code.visualstudio.com/api/references/vscode-api#GlobPattern) used to find files to parse with the Markdown Links extension. Handy in a case that you want only a  part of your workspace parsed.
+
 ### `markdown-links.graphType`
 
 - `default` (**default**)
