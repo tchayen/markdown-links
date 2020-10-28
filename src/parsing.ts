@@ -60,7 +60,8 @@ export const parseFile = async (graph: Graph, filePath: string) => {
   // Remove edges based on an old version of this file.
   graph.edges = graph.edges.filter((edge) => edge.source !== id(filePath));
 
-  const links = findLinks(ast);
+  // Returns a list of decoded links (by default markdown only supports encoded URI)
+  const links = findLinks(ast).map(uri => decodeURI(uri));
   const parentDirectory = filePath.split(path.sep).slice(0, -1).join(path.sep);
 
   for (const link of links) {
