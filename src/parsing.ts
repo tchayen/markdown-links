@@ -4,7 +4,7 @@ import * as unified from "unified";
 import * as markdown from "remark-parse";
 import * as wikiLinkPlugin from "remark-wiki-link";
 import * as frontmatter from "remark-frontmatter";
-import { MarkdownNode, Graph } from "./types";
+import { MarkdownNode, Graph, Node } from "./types";
 import { TextDecoder } from "util";
 import {
   findTitle,
@@ -41,27 +41,25 @@ export const parseFile = async (graph: Graph, filePath: string) => {
 
   let title: string | null = findTitle(ast);
 
-  const index = graph.nodes.findIndex((node) => node.path === filePath);
-
+  const node = graph.getNodeByPath(filePath);
   if (!title) {
-    if (index !== -1) {
-      graph.nodes.splice(index, 1);
+    if (node) {
+      graph.removeNode(node.id);
     }
-
     return;
   }
 
-  if (index !== -1) {
-    graph.nodes[index].label = title;
+  const nodeId = node ? node.id : id(filePath);
+  if (node) {
+    node.label = title;
+    // Remove edges based on an old version of this file.
+    graph.clearNodeLinks(nodeId);
   } else {
-    graph.nodes.push({ id: id(filePath), path: filePath, label: title });
+    graph.addNode(new Node(nodeId, filePath, title));
   }
 
-  // Remove edges based on an old version of this file.
-  graph.edges = graph.edges.filter((edge) => edge.source !== id(filePath));
-
   // Returns a list of decoded links (by default markdown only supports encoded URI)
-  const links = findLinks(ast).map(uri => decodeURI(uri));
+  const links = findLinks(ast).map((uri) => decodeURI(uri));
   const parentDirectory = filePath.split(path.sep).slice(0, -1).join(path.sep);
 
   for (const link of links) {
@@ -70,7 +68,7 @@ export const parseFile = async (graph: Graph, filePath: string) => {
       target = path.normalize(`${parentDirectory}/${link}`);
     }
 
-    graph.edges.push({ source: id(filePath), target: id(target) });
+    graph.addLink(nodeId, id(target));
   }
 };
 

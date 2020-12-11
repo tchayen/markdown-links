@@ -46,7 +46,7 @@ export const findTitle = (ast: MarkdownNode): string | null => {
       child.children &&
       child.children.length > 0
     ) {
-      let title = child.children[0].value!
+      let title = child.children[0].value!;
 
       const titleMaxLength = getTitleMaxLength();
       if (titleMaxLength > 0 && title.length > titleMaxLength) {
@@ -83,7 +83,7 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
 
 export const getTitleMaxLength = () => {
   return getConfiguration("titleMaxLength");
-}
+};
 
 export const getColumnSetting = (key: string) => {
   const column = getConfiguration(key);
@@ -107,18 +107,12 @@ export const getFileTypesSetting = () => {
   return getConfiguration("fileTypes") || DEFAULT_VALUE;
 };
 
-export const getDot = (graph: Graph) => `digraph g {
-  ${graph.nodes
-    .map((node) => `  ${node.id} [label="${node.label}"];`)
-    .join("\n")}
-  ${graph.edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
+export const getDot = (graph: Graph) => {
+  const d3Graph = graph.toD3Graph();
+  return `digraph g {
+    ${d3Graph.nodes
+      .map((node) => `  ${node.id} [label="${node.label}"];`)
+      .join("\n")}
+    ${d3Graph.edges.map((edge) => `  ${edge.source} -> ${edge.target}`).join("\n")}
   }`;
-
-export const exists = (graph: Graph, id: string) =>
-  !!graph.nodes.find((node) => node.id === id);
-
-export const filterNonExistingEdges = (graph: Graph) => {
-  graph.edges = graph.edges.filter(
-    (edge) => exists(graph, edge.source) && exists(graph, edge.target)
-  );
 };
