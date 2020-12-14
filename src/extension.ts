@@ -66,10 +66,13 @@ const watch = (
     sendGraph();
   });
 
-  vscode.workspace.onDidOpenTextDocument(async (event) => {
+  vscode.window.onDidChangeActiveTextEditor(async (event) => {
+    if (!event) {
+      return;
+    }
     panel.webview.postMessage({
       type: "fileOpen",
-      payload: { path: event.fileName },
+      payload: { path: event!.document.fileName },
     });
   });
 
