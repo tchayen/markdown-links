@@ -88,6 +88,12 @@ When abbreviated for a maximum length of 24, becomes:
 Type checking a multithr...
 ```
 
+### `markdown-links.wikilinkAliasDivider`
+
+The character used to separate the link from the link text (`[[link:text]]`). Defaults to `:`.
+
+This option requires restart to take effect.
+
 ## Roadmap
 
 Plans for development are roughly summarized in the [Roadmap](docs/roadmap.md).

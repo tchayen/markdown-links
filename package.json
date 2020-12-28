@@ -73,7 +73,7 @@
         "markdown-links.wikilinkAliasDivider": {
           "type": "string",
           "default": ":",
-          "description": "The character used to separate the link from the link text ([[link:text]])."
+          "description": "The character used to separate the link from the link text ([[link:text]]).\nThis option requires restart to take effect."
         }
       }
     }
