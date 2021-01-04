@@ -85,8 +85,8 @@ export const getTitleMaxLength = () => {
   return getConfiguration("titleMaxLength");
 }
 
-export const getWikilinkAliasDivider = () => {
-  return getConfiguration("wikilinkAliasDivider");
+export const getWikiLinkAliasDivider = () => {
+  return getConfiguration("wikiLinkAliasDivider");
 };
 
 export const getColumnSetting = (key: string) => {

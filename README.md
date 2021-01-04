@@ -88,7 +88,7 @@ When abbreviated for a maximum length of 24, becomes:
 Type checking a multithr...
 ```
 
-### `markdown-links.wikilinkAliasDivider`
+### `markdown-links.wikiLinkAliasDivider`
 
 The character used to separate the link from the link text (`[[link:text]]`). Defaults to `:`.
 

@@ -14,7 +14,7 @@ import {
   getFileTypesSetting,
   getConfiguration,
   getTitleMaxLength,
-  getWikilinkAliasDivider,
+  getWikiLinkAliasDivider,
 } from "./utils";
 import { basename } from "path";
 
@@ -31,7 +31,7 @@ export const idResolver = (id: string) => {
 
 const parser = unified()
   .use(markdown)
-  .use(wikiLinkPlugin, { pageResolver: idResolver, aliasDivider: getWikilinkAliasDivider() })
+  .use(wikiLinkPlugin, { pageResolver: idResolver, aliasDivider: getWikiLinkAliasDivider() })
   .use(frontmatter);
 
 export const parseFile = async (graph: Graph, filePath: string) => {
