@@ -92,7 +92,7 @@ Type checking a multithr...
 
 The character used to separate the link from the link text (`[[link:text]]`). Defaults to `:`.
 
-This option requires restart to take effect.
+This option requires restarting Visual Studio Code to take effect.
 
 ## Roadmap
 
