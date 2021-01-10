@@ -102,16 +102,16 @@ export const getFileIdRegexp = () => {
 
 export const FILE_ID_REGEXP = getFileIdRegexp();
 
-export const getFileSearchExpression = (): string => {
+export const getFindFilesGlob = (): string => {
   const configFileTypes: string[] = getConfiguration("fileTypes");
-  const searchGlob: string = getConfiguration("searchGlob");
-  if (searchGlob) {
+  const findFilesGlob: string = getConfiguration("findFilesGlob");
+  if (findFilesGlob) {
     if (configFileTypes) {
       vscode.window.showWarningMessage(
-        "You have both fileTypes and searchGlob settings defined, searchGlob is taking precedence."
+        "You have both fileTypes and findFilesGlob settings defined, findFilesGlob is taking precedence."
       );
     }
-    return searchGlob;
+    return findFilesGlob;
   }
   const DEFAULT_VALUE = ["md"];
   const fileTypes = configFileTypes || DEFAULT_VALUE;
