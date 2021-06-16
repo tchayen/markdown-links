@@ -11,9 +11,7 @@ import {
   findLinks,
   id,
   FILE_ID_REGEXP,
-  getFileTypesSetting,
-  getConfiguration,
-  getTitleMaxLength,
+  getFindFilesGlob,
 } from "./utils";
 import { basename } from "path";
 
@@ -101,9 +99,7 @@ export const parseDirectory = async (
 ) => {
   // `findFiles` is used here since it respects files excluded by either the
   // global or workspace level files.exclude config option.
-  const files = await vscode.workspace.findFiles(
-    `**/*{${(getFileTypesSetting() as string[]).map((f) => `.${f}`).join(",")}}`
-  );
+  const files = await vscode.workspace.findFiles(getFindFilesGlob());
 
   const promises: Promise<void>[] = [];
 
