@@ -3,7 +3,6 @@ import { TextDecoder } from "util";
 import * as path from "path";
 import { parseFile, parseDirectory, learnFileId } from "./parsing";
 import {
-  filterNonExistingEdges,
   getColumnSetting,
   getConfiguration,
   getFileTypesSetting,
@@ -32,37 +31,33 @@ const watch = (
   const sendGraph = () => {
     panel.webview.postMessage({
       type: "refresh",
-      payload: graph,
+      payload: graph.toD3Graph(),
     });
   };
 
   // Watch file changes in case user adds a link.
   watcher.onDidChange(async (event) => {
     await parseFile(graph, event.path);
-    filterNonExistingEdges(graph);
+    graph.fixEdges();
     sendGraph();
   });
 
   // Watch file creation in case user adds a new file.
   watcher.onDidCreate(async (event) => {
     await parseFile(graph, event.path);
-    filterNonExistingEdges(graph);
+    graph.fixEdges();
     sendGraph();
   });
 
+  // Watch file deletion and remove the matching node from the graph.
   watcher.onDidDelete(async (event) => {
     const filePath = path.normalize(event.path);
-    const index = graph.nodes.findIndex((node) => node.path === filePath);
-    if (index === -1) {
+    const node = graph.getNodeByPath(filePath);
+    if (!node) {
       return;
     }
 
-    graph.nodes.splice(index, 1);
-    graph.edges = graph.edges.filter(
-      (edge) => edge.source !== filePath && edge.target !== filePath
-    );
-
-    filterNonExistingEdges(graph);
+    graph.removeNode(node.id);
     sendGraph();
   });
 
@@ -80,25 +75,10 @@ const watch = (
     for (const file of event.files) {
       const previous = path.normalize(file.oldUri.path);
       const next = path.normalize(file.newUri.path);
-
-      for (const edge of graph.edges) {
-        if (edge.source === previous) {
-          edge.source = next;
-        }
-
-        if (edge.target === previous) {
-          edge.target = next;
-        }
-      }
-
-      for (const node of graph.nodes) {
-        if (node.path === previous) {
-          node.path = next;
-        }
-      }
-
-      sendGraph();
+      graph.updateNodePath(previous, next);
     }
+
+    sendGraph();
   });
 
   panel.webview.onDidReceiveMessage(
@@ -146,14 +126,11 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const graph: Graph = {
-        nodes: [],
-        edges: [],
-      };
+      const graph: Graph = new Graph();
 
       await parseDirectory(graph, learnFileId);
       await parseDirectory(graph, parseFile);
-      filterNonExistingEdges(graph);
+      graph.fixEdges();
 
       panel.webview.html = await getWebviewContent(context, panel);
 
