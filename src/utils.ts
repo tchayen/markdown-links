@@ -85,6 +85,10 @@ export const getTitleMaxLength = () => {
   return getConfiguration("titleMaxLength");
 }
 
+export const getWikiLinkAliasDivider = () => {
+  return getConfiguration("wikiLinkAliasDivider");
+};
+
 export const getColumnSetting = (key: string) => {
   const column = getConfiguration(key);
   return settingToValue[column] || vscode.ViewColumn.One;
