@@ -2,19 +2,19 @@
 
 Adds command `Show Graph` that displays a graph of local links between Markdown files in the current working directory.
 
-Gives better insights into structure of your files if you are writinga wiki, a Zettelkasten style notebook or documentation.
+Gives better insights into structure of your files if you are writing a wiki, a Zettelkasten style notebook or documentation.
 
 ![Demo GIF](demo.gif)
 
 ## Workflow
 
-Recommended workflow is either keeping the graph open and using it as an alternative to the explorer sidebar or checking the it from time to time.
+Recommended workflow is either keeping the graph open and using it as an alternative to the explorer sidebar or checking it from time to time.
 
 The graph refreshes automatically every time you:
 
 - Update a Markdown title of the file.
 - Change links to other files.
-- Create a new file and add give it a title.
+- Create a new file and give it a title.
 - Remove a file.
 
 When active file in the editor changes and it matches one of the files in the graph – it will be highlighted.
@@ -67,8 +67,8 @@ A [regular expression](https://developer.mozilla.org/en-US/docs/Web/JavaScript/G
 
 ### `markdown-links.graphType`
 
-- `default` (**default**)
-- `obsidian` - obsidian like graph
+- `default` (**default**).
+- `obsidian` - obsidian like graph.
 
 ### `markdown-links.titleMaxLength`
 
