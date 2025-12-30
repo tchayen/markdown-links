@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2025-12-30
+
+This version mainly modernizes the codebase. It offers no functionality changes.
+
+### Security
+
+- Updated all dependencies to address vulnerabilities reported by `npm`.
+- Added CSP to the extension webview.
+
 ## [0.8.0] – 2020-08-22
 
 ### Added
@@ -14,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Ignored files specified in workspace are now respected ([#35](https://github.com/tchayen/markdown-links/pull/35)).
+
 ### Fixed
 
 - Fixed the problem with deleting and or renaming files on Windows ([#53](https://github.com/tchayen/markdown-links/pull/53)).

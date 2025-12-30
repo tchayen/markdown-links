@@ -1,13 +1,35 @@
+# Source files
+src/**
+**/*.ts
+**/*.map
+
+# Build configuration
+webpack.config.js
+tsconfig.json
+.mocharc.json
+eslint.config.mjs
+
+# Development files
 .vscode/**
 .vscode-test/**
-node_modules/**
 out/test/**
-src/**
+node_modules/**
+
+# Documentation and examples
 examples/**
-.gitignore
-**/tsconfig.json
-**/.eslintrc.json
-**/*.map
-**/*.ts
+docs/**
 **/*.gif
-webpack.config.js
+*.md
+!README.md
+
+# Git and CI
+.gitignore
+.github/**
+
+# Editor config
+.editorconfig
+.prettierrc
+.prettierignore
+
+# Misc
+.DS_Store

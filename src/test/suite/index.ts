@@ -1,38 +1,54 @@
-import * as path from 'path';
-import * as Mocha from 'mocha';
-import * as glob from 'glob';
+import path from "path";
+import { readdir } from "fs/promises";
+import Mocha from "mocha";
 
-export function run(): Promise<void> {
-	// Create the mocha test
-	const mocha = new Mocha({
-		ui: 'tdd',
-		color: true
-	});
+async function* walkTestFiles(dir: string): AsyncGenerator<string> {
+  const entries = await readdir(dir, { withFileTypes: true });
 
-	const testsRoot = path.resolve(__dirname, '..');
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
 
-	return new Promise((c, e) => {
-		glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
-			if (err) {
-				return e(err);
-			}
+    if (entry.isDirectory()) {
+      yield* walkTestFiles(fullPath);
+    } else if (entry.name.endsWith(".test.js")) {
+      yield fullPath;
+    }
+  }
+}
 
-			// Add files to the test suite
-			files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+export async function run(): Promise<void> {
+  // Create the mocha test
+  const mocha = new Mocha({
+    ui: "tdd",
+    color: true,
+    timeout: 10000,
+  });
 
-			try {
-				// Run the mocha test
-				mocha.run(failures => {
-					if (failures > 0) {
-						e(new Error(`${failures} tests failed.`));
-					} else {
-						c();
-					}
-				});
-			} catch (err) {
-				console.error(err);
-				e(err);
-			}
-		});
-	});
+  const testsRoot = path.resolve(__dirname, "..");
+
+  try {
+    // Find all test files
+    for await (const file of walkTestFiles(testsRoot)) {
+      mocha.addFile(file);
+    }
+
+    // Run the mocha test
+    return new Promise((resolve, reject) => {
+      try {
+        mocha.run((failures) => {
+          if (failures > 0) {
+            reject(new Error(`${failures} tests failed.`));
+          } else {
+            resolve();
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        reject(err);
+      }
+    });
+  } catch (err) {
+    console.error("Failed to find test files:", err);
+    throw err;
+  }
 }

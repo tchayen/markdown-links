@@ -18,7 +18,7 @@ const updateNodeSize = () => {
       3 *
       Math.sqrt(
         linksData.filter((l) => l.source === el.id || l.target === el.id)
-          .length + 1
+          .length + 1,
       );
     if (weight < MINIMAL_NODE_SIZE) {
       weight = MINIMAL_NODE_SIZE;
@@ -70,7 +70,7 @@ const onMouseover = function (d) {
   });
 };
 
-const onMouseout = function (d) {
+const onMouseout = function () {
   node.attr("class", "");
   link.attr("class", "");
   text.attr("class", "");
@@ -143,7 +143,7 @@ const simulation = d3
     d3
       .forceLink(linksData)
       .id((d) => d.id)
-      .distance(70)
+      .distance(70),
   )
   .force("center", d3.forceCenter(width / 2, height / 2))
   .force("collision", d3.forceCollide().radius(80))
@@ -163,8 +163,6 @@ const resize = () => {
 
   const zoomOrKeep = (value) => (zoomLevel >= 1 ? value / zoomLevel : value);
 
-  const font = Math.max(Math.round(zoomOrKeep(FONT_SIZE)), 1);
-
   text.attr("font-size", (d) => nodeSize[d.id]);
   text.attr("y", (d) => d.y - zoomOrKeep(FONT_BASELINE + nodeSize[d.id]));
   link.attr("stroke-width", zoomOrKeep(STROKE));
@@ -183,7 +181,7 @@ window.addEventListener("message", (event) => {
   const message = event.data;
 
   switch (message.type) {
-    case "refresh":
+    case "refresh": {
       const { nodes, edges } = message.payload;
 
       if (sameNodes(nodesData, nodes) && sameEdges(linksData, edges)) {
@@ -194,7 +192,8 @@ window.addEventListener("message", (event) => {
       linksData = edges;
       restart();
       break;
-    case "fileOpen":
+    }
+    case "fileOpen": {
       let path = message.payload.path;
       if (path.endsWith(".git")) {
         path = path.slice(0, -4);
@@ -209,6 +208,7 @@ window.addEventListener("message", (event) => {
       node.attr("active", (d) => (fixSlashes(d.path) === path ? true : null));
       text.attr("active", (d) => (fixSlashes(d.path) === path ? true : null));
       break;
+    }
   }
 
   // Resize to update size of active node.

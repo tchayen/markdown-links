@@ -1,3 +1,5 @@
+import type { Root, RootContent } from "mdast";
+
 export type Edge = {
   source: string;
   target: string;
@@ -14,13 +16,14 @@ export type Graph = {
   edges: Edge[];
 };
 
-export type MarkdownNode = {
-  type: string;
-  children?: MarkdownNode[];
-  url?: string;
+// Custom type that extends mdast types to support wiki-link plugin
+export type MarkdownNode = Root | RootContent | WikiLinkNode;
+
+export type WikiLinkNode = {
+  type: "wikiLink";
   value?: string;
-  depth?: number;
   data?: {
     permalink?: string;
   };
+  children?: MarkdownNode[];
 };

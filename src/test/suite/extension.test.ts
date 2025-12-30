@@ -1,15 +1,35 @@
-import * as assert from 'assert';
+import * as assert from "assert";
+import { suite, test, before } from "mocha";
+import * as vscode from "vscode";
 
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
-import * as vscode from 'vscode';
-// import * as myExtension from '../../extension';
+suite("Extension Integration Test Suite", () => {
+  before(() => {
+    vscode.window.showInformationMessage("Starting integration tests.");
+  });
 
-suite('Extension Test Suite', () => {
-	vscode.window.showInformationMessage('Start all tests.');
+  test("Extension should be present", () => {
+    assert.ok(vscode.extensions.getExtension("tchayen.markdown-links"));
+  });
 
-	test('Sample test', () => {
-		assert.equal(-1, [1, 2, 3].indexOf(5));
-		assert.equal(-1, [1, 2, 3].indexOf(0));
-	});
+  test("Extension should activate", async () => {
+    const ext = vscode.extensions.getExtension("tchayen.markdown-links");
+    assert.ok(ext);
+    await ext?.activate();
+    assert.strictEqual(ext?.isActive, true);
+  });
+
+  test("Command should be registered", async () => {
+    const commands = await vscode.commands.getCommands(true);
+    assert.ok(commands.includes("markdown-links.showGraph"));
+  });
+
+  test("Configuration should have default values", () => {
+    const config = vscode.workspace.getConfiguration("markdown-links");
+    assert.strictEqual(config.get("showColumn"), "beside");
+    assert.strictEqual(config.get("openColumn"), "one");
+    assert.strictEqual(config.get("fileIdRegexp"), "\\d{14}");
+    assert.strictEqual(config.get("autoStart"), false);
+    assert.strictEqual(config.get("graphType"), "default");
+    assert.strictEqual(config.get("titleMaxLength"), 24);
+  });
 });

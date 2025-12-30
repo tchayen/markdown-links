@@ -80,7 +80,7 @@ const simulation = d3
     d3
       .forceLink(linksData)
       .id((d) => d.id)
-      .distance(70)
+      .distance(70),
   )
   .force("center", d3.forceCenter(width / 2, height / 2))
   .stop();
@@ -117,7 +117,7 @@ window.addEventListener("message", (event) => {
   const message = event.data;
 
   switch (message.type) {
-    case "refresh":
+    case "refresh": {
       const { nodes, edges } = message.payload;
 
       if (sameNodes(nodesData, nodes) && sameEdges(linksData, edges)) {
@@ -128,7 +128,8 @@ window.addEventListener("message", (event) => {
       linksData = edges;
       restart();
       break;
-    case "fileOpen":
+    }
+    case "fileOpen": {
       let path = message.payload.path;
       if (path.endsWith(".git")) {
         path = path.slice(0, -4);
@@ -143,6 +144,7 @@ window.addEventListener("message", (event) => {
       node.attr("active", (d) => (fixSlashes(d.path) === path ? true : null));
       text.attr("active", (d) => (fixSlashes(d.path) === path ? true : null));
       break;
+    }
   }
 
   // Resize to update size of active node.

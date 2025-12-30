@@ -1,17 +1,29 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es6",
-    "outDir": "out",
-    "lib": ["es6"],
-    "sourceMap": true,
+    /* Language and emit */
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": ["ES2022"],
     "rootDir": "src",
+    "outDir": "out",
+    "sourceMap": true,
+
+    /* Type checking */
+    "strict": true,
     "noImplicitAny": false,
-    "strict": true /* enable all strict type-checking options */
-    /* Additional Checks */
-    // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
-    // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
-    // "noUnusedParameters": true,  /* Report errors on unused parameters. */
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* Node/TS interop */
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    /* Quality-of-life */
+    "resolveJsonModule": true,
+    "types": ["node", "vscode"]
   },
-  "exclude": ["node_modules", ".vscode-test"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", ".vscode-test", "dist", "out"]
 }

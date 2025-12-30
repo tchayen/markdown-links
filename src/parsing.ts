@@ -1,10 +1,10 @@
-import * as vscode from "vscode";
-import * as path from "path";
-import * as unified from "unified";
-import * as markdown from "remark-parse";
-import * as wikiLinkPlugin from "remark-wiki-link";
-import * as frontmatter from "remark-frontmatter";
-import { MarkdownNode, Graph } from "./types";
+import vscode from "vscode";
+import path from "path";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkWikiLink from "remark-wiki-link";
+import remarkFrontmatter from "remark-frontmatter";
+import { Graph } from "./types";
 import { TextDecoder } from "util";
 import {
   findTitle,
@@ -12,12 +12,10 @@ import {
   id,
   FILE_ID_REGEXP,
   getFileTypesSetting,
-  getConfiguration,
-  getTitleMaxLength,
 } from "./utils";
 import { basename } from "path";
 
-let idToPath: Record<string, string> = {};
+const idToPath: Record<string, string> = {};
 
 export const idResolver = (id: string) => {
   const filePath = idToPath[id];
@@ -29,17 +27,17 @@ export const idResolver = (id: string) => {
 };
 
 const parser = unified()
-  .use(markdown)
-  .use(wikiLinkPlugin, { pageResolver: idResolver })
-  .use(frontmatter);
+  .use(remarkParse)
+  .use(remarkWikiLink, { pageResolver: idResolver })
+  .use(remarkFrontmatter);
 
 export const parseFile = async (graph: Graph, filePath: string) => {
   filePath = path.normalize(filePath);
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
-  const ast: MarkdownNode = parser.parse(content);
+  const ast = parser.parse(content);
 
-  let title: string | null = findTitle(ast);
+  const title: string | null = findTitle(ast);
 
   const index = graph.nodes.findIndex((node) => node.path === filePath);
 
@@ -52,7 +50,7 @@ export const parseFile = async (graph: Graph, filePath: string) => {
   }
 
   if (index !== -1) {
-    graph.nodes[index].label = title;
+    graph.nodes[index]!.label = title;
   } else {
     graph.nodes.push({ id: id(filePath), path: filePath, label: title });
   }
@@ -61,7 +59,7 @@ export const parseFile = async (graph: Graph, filePath: string) => {
   graph.edges = graph.edges.filter((edge) => edge.source !== id(filePath));
 
   // Returns a list of decoded links (by default markdown only supports encoded URI)
-  const links = findLinks(ast).map(uri => decodeURI(uri));
+  const links = findLinks(ast).map((uri) => decodeURI(uri));
   const parentDirectory = filePath.split(path.sep).slice(0, -1).join(path.sep);
 
   for (const link of links) {
@@ -79,7 +77,7 @@ export const findFileId = async (filePath: string): Promise<string | null> => {
   const content = new TextDecoder("utf-8").decode(buffer);
 
   const match = content.match(FILE_ID_REGEXP);
-  return match ? match[1] : null;
+  return match && match[1] ? match[1] : null;
 };
 
 export const learnFileId = async (_graph: Graph, filePath: string) => {
@@ -97,12 +95,14 @@ export const learnFileId = async (_graph: Graph, filePath: string) => {
 
 export const parseDirectory = async (
   graph: Graph,
-  fileCallback: (graph: Graph, path: string) => Promise<void>
+  fileCallback: (graph: Graph, path: string) => Promise<void>,
 ) => {
   // `findFiles` is used here since it respects files excluded by either the
   // global or workspace level files.exclude config option.
   const files = await vscode.workspace.findFiles(
-    `**/*{${(getFileTypesSetting() as string[]).map((f) => `.${f}`).join(",")}}`
+    `**/*{${(getFileTypesSetting() as string[])
+      .map((f) => `.${f}`)
+      .join(",")}}`,
   );
 
   const promises: Promise<void>[] = [];

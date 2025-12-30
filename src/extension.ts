@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { TextDecoder } from "util";
 import * as path from "path";
 import { parseFile, parseDirectory, learnFileId } from "./parsing";
 import {
@@ -13,20 +12,21 @@ import { Graph } from "./types";
 const watch = (
   context: vscode.ExtensionContext,
   panel: vscode.WebviewPanel,
-  graph: Graph
+  graph: Graph,
 ) => {
-  if (vscode.workspace.rootPath === undefined) {
+  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+  if (!workspaceFolder) {
     return;
   }
 
   const watcher = vscode.workspace.createFileSystemWatcher(
     new vscode.RelativePattern(
-      vscode.workspace.rootPath,
-      `**/*{${getFileTypesSetting().join(",")}}`
+      workspaceFolder,
+      `**/*{${getFileTypesSetting().join(",")}}`,
     ),
     false,
     false,
-    false
+    false,
   );
 
   const sendGraph = () => {
@@ -59,7 +59,7 @@ const watch = (
 
     graph.nodes.splice(index, 1);
     graph.edges = graph.edges.filter(
-      (edge) => edge.source !== filePath && edge.target !== filePath
+      (edge) => edge.source !== filePath && edge.target !== filePath,
     );
 
     filterNonExistingEdges(graph);
@@ -102,21 +102,25 @@ const watch = (
   });
 
   panel.webview.onDidReceiveMessage(
-    (message) => {
+    async (message) => {
       if (message.type === "ready") {
         sendGraph();
       }
       if (message.type === "click") {
-        const openPath = vscode.Uri.file(message.payload.path);
-        const column = getColumnSetting("openColumn");
-
-        vscode.workspace.openTextDocument(openPath).then((doc) => {
-          vscode.window.showTextDocument(doc, column);
-        });
+        try {
+          const openPath = vscode.Uri.file(message.payload.path);
+          const column = getColumnSetting("openColumn");
+          const doc = await vscode.workspace.openTextDocument(openPath);
+          await vscode.window.showTextDocument(doc, column);
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Failed to open file: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
       }
     },
     undefined,
-    context.subscriptions
+    context.subscriptions,
   );
 
   panel.onDidDispose(() => {
@@ -127,38 +131,48 @@ const watch = (
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("markdown-links.showGraph", async () => {
-      const column = getColumnSetting("showColumn");
-
-      const panel = vscode.window.createWebviewPanel(
-        "markdownLinks",
-        "Markdown Links",
-        column,
-        {
-          enableScripts: true,
-          retainContextWhenHidden: true,
+      try {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+          vscode.window.showErrorMessage(
+            "This command can only be activated in an open workspace",
+          );
+          return;
         }
-      );
 
-      if (vscode.workspace.rootPath === undefined) {
-        vscode.window.showErrorMessage(
-          "This command can only be activated in open directory"
+        const column = getColumnSetting("showColumn");
+
+        const panel = vscode.window.createWebviewPanel(
+          "markdownLinks",
+          "Markdown Links",
+          column,
+          {
+            enableScripts: true,
+            retainContextWhenHidden: true,
+            localResourceRoots: [
+              vscode.Uri.joinPath(context.extensionUri, "static"),
+            ],
+          },
         );
-        return;
+
+        const graph: Graph = {
+          nodes: [],
+          edges: [],
+        };
+
+        await parseDirectory(graph, learnFileId);
+        await parseDirectory(graph, parseFile);
+        filterNonExistingEdges(graph);
+
+        panel.webview.html = await getWebviewContent(context, panel);
+
+        watch(context, panel, graph);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to show graph: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
-
-      const graph: Graph = {
-        nodes: [],
-        edges: [],
-      };
-
-      await parseDirectory(graph, learnFileId);
-      await parseDirectory(graph, parseFile);
-      filterNonExistingEdges(graph);
-
-      panel.webview.html = await getWebviewContent(context, panel);
-
-      watch(context, panel, graph);
-    })
+    }),
   );
 
   const shouldAutoStart = getConfiguration("autoStart");
@@ -168,34 +182,44 @@ export function activate(context: vscode.ExtensionContext) {
   }
 }
 
+export function deactivate() {
+  // Cleanup resources if needed
+}
+
 async function getWebviewContent(
   context: vscode.ExtensionContext,
-  panel: vscode.WebviewPanel
+  panel: vscode.WebviewPanel,
 ) {
-  const webviewPath = vscode.Uri.file(
-    path.join(context.extensionPath, "static", "webview.html")
+  const webviewPath = vscode.Uri.joinPath(
+    context.extensionUri,
+    "static",
+    "webview.html",
   );
   const file = await vscode.workspace.fs.readFile(webviewPath);
 
-  const text = new TextDecoder("utf-8").decode(file);
+  const text = new TextDecoder().decode(file);
 
   const webviewUri = (fileName: string) =>
     panel.webview
-      .asWebviewUri(
-        vscode.Uri.file(path.join(context.extensionPath, "static", fileName))
-      )
+      .asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "static", fileName))
       .toString();
 
-  const graphDirectory = path.join("graphs", getConfiguration("graphType"));
+  // Generate a nonce for Content Security Policy
+  const nonce = getNonce();
+
+  const graphType = getConfiguration("graphType") as string;
+  const graphDirectory = path.posix.join("graphs", graphType);
   const textWithVariables = text
     .replace(
       "${graphPath}",
-      "{{" + path.join(graphDirectory, "graph.js") + "}}"
+      "{{" + path.posix.join(graphDirectory, "graph.js") + "}}",
     )
     .replace(
       "${graphStylesPath}",
-      "{{" + path.join(graphDirectory, "graph.css") + "}}"
-    );
+      "{{" + path.posix.join(graphDirectory, "graph.css") + "}}",
+    )
+    .replace("${cspSource}", panel.webview.cspSource)
+    .replace("${nonce}", nonce);
 
   // Basic templating. Will replace {{someScript.js}} with the
   // appropriate webview URI.
@@ -205,4 +229,14 @@ async function getWebviewContent(
   });
 
   return filled;
+}
+
+function getNonce() {
+  let text = "";
+  const possible =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for (let i = 0; i < 32; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
 }

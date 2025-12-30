@@ -1,0 +1,8 @@
+{
+  "require": ["ts-node/register"],
+  "extensions": ["ts"],
+  "spec": ["src/test/suite/**/*.test.ts"],
+  "timeout": 10000,
+  "ui": "tdd",
+  "color": true
+}

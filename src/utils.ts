@@ -1,29 +1,31 @@
 import * as vscode from "vscode";
-import * as md5 from "md5";
+import md5 from "md5";
 import { extname } from "path";
-import { MarkdownNode, Graph } from "./types";
+import { MarkdownNode, Graph, WikiLinkNode } from "./types";
 
 export const findLinks = (ast: MarkdownNode): string[] => {
   if (ast.type === "link" || ast.type === "definition") {
     // Ignore empty, anchor and web links.
+    const url = "url" in ast ? ast.url : undefined;
     if (
-      !ast.url ||
-      ast.url.startsWith("#") ||
-      vscode.Uri.parse(ast.url).scheme.startsWith("http")
+      !url ||
+      url.startsWith("#") ||
+      vscode.Uri.parse(url).scheme.startsWith("http")
     ) {
       return [];
     }
 
-    return [ast.url];
+    return [url];
   }
 
   if (ast.type === "wikiLink") {
-    return [ast.data!.permalink!];
+    const wikiNode = ast as WikiLinkNode;
+    return [wikiNode.data?.permalink ?? ""];
   }
 
   const links: string[] = [];
 
-  if (!ast.children) {
+  if (!("children" in ast) || !ast.children) {
     return links;
   }
 
@@ -35,22 +37,29 @@ export const findLinks = (ast: MarkdownNode): string[] => {
 };
 
 export const findTitle = (ast: MarkdownNode): string | null => {
-  if (!ast.children) {
+  if (!("children" in ast) || !ast.children) {
     return null;
   }
 
   for (const child of ast.children) {
     if (
       child.type === "heading" &&
+      "depth" in child &&
       child.depth === 1 &&
+      "children" in child &&
       child.children &&
       child.children.length > 0
     ) {
-      let title = child.children[0].value!
+      const firstChild = child.children[0];
+      let title = "";
+
+      if (firstChild && "value" in firstChild) {
+        title = firstChild.value ?? "";
+      }
 
       const titleMaxLength = getTitleMaxLength();
       if (titleMaxLength > 0 && title.length > titleMaxLength) {
-        title = title.substr(0, titleMaxLength).concat("...");
+        title = title.substring(0, titleMaxLength).concat("...");
       }
 
       return title;
@@ -83,7 +92,7 @@ const settingToValue: { [key: string]: vscode.ViewColumn | undefined } = {
 
 export const getTitleMaxLength = () => {
   return getConfiguration("titleMaxLength");
-}
+};
 
 export const getColumnSetting = (key: string) => {
   const column = getConfiguration(key);
@@ -119,6 +128,6 @@ export const exists = (graph: Graph, id: string) =>
 
 export const filterNonExistingEdges = (graph: Graph) => {
   graph.edges = graph.edges.filter(
-    (edge) => exists(graph, edge.source) && exists(graph, edge.target)
+    (edge) => exists(graph, edge.source) && exists(graph, edge.target),
   );
 };

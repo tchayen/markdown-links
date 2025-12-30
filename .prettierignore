@@ -1,0 +1,8 @@
+node_modules/
+dist/
+out/
+*.js.map
+coverage/
+.vscode-test/
+examples/
+package-lock.json
