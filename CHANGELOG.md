@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4] - 2025-12-30
+
+### Fixed
+
+- Fixed crash when parsing malformed markdown links with nested syntax ([#40](https://github.com/tchayen/markdown-links/issues/40), [#45](https://github.com/tchayen/markdown-links/issues/45), [#98](https://github.com/tchayen/markdown-links/issues/98)). The extension now properly handles:
+  - Relative paths: `./file.md`, `../parent.md`
+  - Double parenthesis: `[text]((link.md))` → extracts `link.md`
+  - Nested parenthesis with angle brackets: `[text](<(link.md)>)` → extracts `link.md`
+  - Malformed links from Notion exports: `[text](<[url](url)>)` → extracts the actual URL
+  - These links are now cleaned and processed correctly instead of crashing the entire graph.
+
 ## [0.8.3] - 2025-12-30
 
 ### Added

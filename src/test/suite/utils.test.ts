@@ -23,6 +23,17 @@ suite("Utils Test Suite", () => {
       assert.strictEqual(links[0], "./test.md");
     });
 
+    test("should handle parent directory relative paths (issue #98)", () => {
+      const ast: MarkdownNode = {
+        type: "link",
+        url: "../parent.md",
+        children: [],
+      };
+      const links = findLinks(ast);
+      assert.strictEqual(links.length, 1);
+      assert.strictEqual(links[0], "../parent.md");
+    });
+
     test("should ignore empty links", () => {
       const ast: MarkdownNode = {
         type: "link",
@@ -96,6 +107,67 @@ suite("Utils Test Suite", () => {
       assert.strictEqual(links.length, 2);
       assert.strictEqual(links[0], "./first.md");
       assert.strictEqual(links[1], "./second.md");
+    });
+
+    test("should handle malformed links with nested markdown syntax gracefully", () => {
+      // This represents a malformed link like:
+      // [text](<[https://url](https://url)>)
+      const ast: MarkdownNode = {
+        type: "link",
+        url: "<[https://cloudinary.com/users/register/free](https://cloudinary.com/users/register/free%5C)>",
+        children: [],
+      };
+      // Should not throw an error and should ignore this malformed link (HTTP)
+      const links = findLinks(ast);
+      assert.strictEqual(links.length, 0);
+    });
+
+    test("should extract URL from double parenthesis with local link (issue #45)", () => {
+      // Pattern: [text]((path/to/file.md)) - should extract the actual path
+      const ast: MarkdownNode = {
+        type: "link",
+        url: "(./test.md)",
+        children: [],
+      };
+      const links = findLinks(ast);
+      assert.strictEqual(links.length, 1);
+      assert.strictEqual(links[0], "./test.md");
+    });
+
+    test("should extract URL from nested parenthesis with angle brackets (issue #45)", () => {
+      // Pattern: [text](<(link)>) - should extract the actual link
+      const ast: MarkdownNode = {
+        type: "link",
+        url: "<(./notes/file.md)>",
+        children: [],
+      };
+      const links = findLinks(ast);
+      assert.strictEqual(links.length, 1);
+      assert.strictEqual(links[0], "./notes/file.md");
+    });
+
+    test("should handle double parenthesis with HTTP URL (issue #45)", () => {
+      // Pattern: [text]((https://url)) causes [UriError] but is HTTP so should be ignored
+      const ast: MarkdownNode = {
+        type: "link",
+        url: "(https://www.quantamagazine.org/article/)",
+        children: [],
+      };
+      // Should not throw an error and should ignore HTTP links
+      const links = findLinks(ast);
+      assert.strictEqual(links.length, 0);
+    });
+
+    test("should handle simple malformed colon pattern (issue #45)", () => {
+      // Pattern: ]((:)) minimal reproduction case - unparsable
+      const ast: MarkdownNode = {
+        type: "link",
+        url: "(:)",
+        children: [],
+      };
+      // Should not throw an error, but this is too malformed to extract
+      const links = findLinks(ast);
+      assert.strictEqual(links.length, 0);
     });
   });
 
@@ -256,7 +328,12 @@ suite("Utils Test Suite", () => {
           {
             type: "heading",
             depth: 1,
-            children: [],
+            children: [
+              {
+                type: "text",
+                value: "",
+              },
+            ],
           },
         ],
       };

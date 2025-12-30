@@ -4,16 +4,90 @@ import { extname } from "path";
 import { load as parseYaml } from "js-yaml";
 import { MarkdownNode, Graph, WikiLinkNode } from "./types";
 
+/**
+ * Clean up malformed URLs by removing common patterns that cause parsing errors.
+ * Handles patterns like: ((url)), <(url)>, <[url](url)>
+ */
+const cleanMalformedUrl = (url: string): string | null => {
+  let cleaned: string | null = url;
+
+  // Handle <(url)> pattern - remove angle brackets and outer parenthesis
+  if (cleaned.match(/^<\(.+\)>$/)) {
+    cleaned = cleaned.slice(2, -2);
+  }
+
+  // Handle ((url)) pattern - remove extra parenthesis
+  if (cleaned && cleaned.match(/^\(.+\)$/)) {
+    cleaned = cleaned.slice(1, -1);
+    // If what's left is just a colon or other invalid pattern, return null
+    if (cleaned.match(/^:\)?$/)) {
+      return null;
+    }
+  }
+
+  // Handle <[url](url)> pattern - extract the URL from nested markdown
+  if (cleaned) {
+    const nestedMarkdownMatch = cleaned.match(/^<\[([^\]]+)\]\(([^)]+)\)>$/);
+    if (nestedMarkdownMatch) {
+      // Use the actual link part (second capture group)
+      cleaned = nestedMarkdownMatch[2] || null;
+    }
+  }
+
+  // Handle <url> pattern - remove angle brackets
+  if (cleaned && cleaned.startsWith("<") && cleaned.endsWith(">")) {
+    cleaned = cleaned.slice(1, -1);
+  }
+
+  return cleaned;
+};
+
 export const findLinks = (ast: MarkdownNode): string[] => {
   if (ast.type === "link" || ast.type === "definition") {
     // Ignore empty, anchor and web links.
-    const url = "url" in ast ? ast.url : undefined;
-    if (
-      !url ||
-      url.startsWith("#") ||
-      vscode.Uri.parse(url).scheme.startsWith("http")
-    ) {
+    let url = "url" in ast ? ast.url : undefined;
+    if (!url || url.startsWith("#")) {
       return [];
+    }
+
+    // Proactively check for and clean malformed URL patterns
+    // These patterns may or may not cause parsing errors, but should be cleaned
+    if (
+      url.match(/^<\(.+\)>$/) ||
+      url.match(/^\(.+\)$/) ||
+      url.match(/^<\[.+\]\(.+\)>$/)
+    ) {
+      const cleaned = cleanMalformedUrl(url);
+      if (cleaned) {
+        url = cleaned;
+      } else {
+        return [];
+      }
+    }
+
+    // Try to parse the URL to check if it's an HTTP link
+    try {
+      if (vscode.Uri.parse(url).scheme.startsWith("http")) {
+        return [];
+      }
+    } catch {
+      // If URL parsing fails, try to clean up malformed URLs
+      const cleaned = cleanMalformedUrl(url);
+      if (!cleaned) {
+        return [];
+      }
+
+      // Try parsing the cleaned URL
+      try {
+        if (vscode.Uri.parse(cleaned).scheme.startsWith("http")) {
+          return [];
+        }
+        // If parsing succeeds and it's not an HTTP link, use the cleaned URL
+        url = cleaned;
+      } catch {
+        // If still fails after cleaning, skip this link
+        return [];
+      }
     }
 
     return [url];
@@ -55,9 +129,8 @@ export const findTitle = (ast: MarkdownNode): string | null => {
           }
           return title;
         }
-      } catch (error) {
+      } catch {
         // If YAML parsing fails, continue to fallback methods
-        console.error("Failed to parse frontmatter YAML:", error);
       }
     }
   }
