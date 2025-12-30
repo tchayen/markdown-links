@@ -88,6 +88,12 @@ When abbreviated for a maximum length of 24, becomes:
 Type checking a multithr...
 ```
 
+### `markdown-links.wikiLinkAliasDivider`
+
+The character used to separate the link from the link text (`[[link:text]]`). Defaults to `:`.
+
+This option requires restarting Visual Studio Code to take effect.
+
 ## Roadmap
 
 Plans for development are roughly summarized in the [Roadmap](docs/roadmap.md).

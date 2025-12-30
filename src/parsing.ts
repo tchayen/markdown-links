@@ -12,6 +12,7 @@ import {
   id,
   FILE_ID_REGEXP,
   getFileTypesSetting,
+  getConfiguration,
 } from "./utils";
 import { basename } from "path";
 
@@ -26,15 +27,22 @@ export const idResolver = (id: string) => {
   }
 };
 
-const parser = unified()
-  .use(remarkParse)
-  .use(remarkWikiLink, { pageResolver: idResolver })
-  .use(remarkFrontmatter);
+const getParser = () => {
+  const aliasDivider = getConfiguration("wikilinkAliasDivider") as string;
+  return unified()
+    .use(remarkParse)
+    .use(remarkWikiLink, {
+      pageResolver: idResolver,
+      aliasDivider: aliasDivider || ":",
+    })
+    .use(remarkFrontmatter);
+};
 
 export const parseFile = async (graph: Graph, filePath: string) => {
   filePath = path.normalize(filePath);
   const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
   const content = new TextDecoder("utf-8").decode(buffer);
+  const parser = getParser();
   const ast = parser.parse(content);
 
   const title: string | null = findTitle(ast);
