@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2025-12-30
+
+### Added
+
+- Option to configure `markdown-links.wikiLinkAliasDivider` (default to `:`).
+
+### Fixed
+
+- Previous CSP change could prevent graph from loading.
+
 ## [0.8.1] - 2025-12-30
 
 This version mainly modernizes the codebase. It offers no functionality changes.

@@ -201,7 +201,9 @@ async function getWebviewContent(
 
   const webviewUri = (fileName: string) =>
     panel.webview
-      .asWebviewUri(vscode.Uri.joinPath(context.extensionUri, "static", fileName))
+      .asWebviewUri(
+        vscode.Uri.joinPath(context.extensionUri, "static", fileName),
+      )
       .toString();
 
   // Generate a nonce for Content Security Policy
@@ -218,8 +220,8 @@ async function getWebviewContent(
       "${graphStylesPath}",
       "{{" + path.posix.join(graphDirectory, "graph.css") + "}}",
     )
-    .replace("${cspSource}", panel.webview.cspSource)
-    .replace("${nonce}", nonce);
+    .replaceAll("${cspSource}", panel.webview.cspSource)
+    .replaceAll("${nonce}", nonce);
 
   // Basic templating. Will replace {{someScript.js}} with the
   // appropriate webview URI.
