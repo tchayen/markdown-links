@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - If front matter title is present, it takes precedence over `# Title`.
 
+### Changed
+
+- Path handling should now work better cross-platform.
+
 ## [0.8.2] - 2025-12-30
 
 ### Added
