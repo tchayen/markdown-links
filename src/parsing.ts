@@ -18,6 +18,36 @@ import { basename } from "path";
 
 const idToPath: Record<string, string> = {};
 
+/**
+ * Resolve a link to its target path based on the link type and context.
+ * This is a pure function that can be tested independently of VS Code APIs.
+ *
+ * @param link - The link string (e.g., "./file.md", "/docs/file.md", "../parent.md")
+ * @param currentFileDir - The directory of the current file
+ * @param workspaceRoot - The workspace root directory (optional)
+ * @returns The resolved absolute path, or null if resolution fails
+ */
+export const resolveLinkPath = (
+  link: string,
+  currentFileDir: string,
+  workspaceRoot?: string,
+): string | null => {
+  if (link.startsWith("/")) {
+    // Workspace-relative path
+    if (!workspaceRoot) {
+      return null;
+    }
+    // Remove leading slash and join with workspace root
+    return path.join(workspaceRoot, link.substring(1));
+  } else if (path.isAbsolute(link)) {
+    // Absolute filesystem path
+    return link;
+  } else {
+    // Relative path from current file's directory
+    return path.join(currentFileDir, link);
+  }
+};
+
 export const idResolver = (id: string) => {
   const filePath = idToPath[id];
   if (filePath === undefined) {
@@ -79,28 +109,15 @@ export const parseFile = async (graph: Graph, filePath: string) => {
 
   // Returns a list of decoded links (by default markdown only supports encoded URI)
   const links = findLinks(ast).map((uri) => decodeURI(uri));
-  const parentDirUri = vscode.Uri.joinPath(fileUri, "..");
+  const currentFileDir = path.dirname(normalizedFilePath);
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
   for (const link of links) {
-    let targetUri: vscode.Uri;
-
-    if (link.startsWith("/")) {
-      // Treat as path relative to workspace root
-      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-      if (!workspaceFolder) {
-        continue;
-      }
-      // Remove leading slash and join with workspace root
-      targetUri = vscode.Uri.joinPath(workspaceFolder.uri, link.substring(1));
-    } else if (path.isAbsolute(link)) {
-      // Absolute filesystem path
-      targetUri = vscode.Uri.file(link);
-    } else {
-      // Relative path from current file's directory
-      targetUri = vscode.Uri.joinPath(parentDirUri, link);
+    const targetPath = resolveLinkPath(link, currentFileDir, workspaceRoot);
+    if (!targetPath) {
+      continue;
     }
 
-    const targetPath = targetUri.fsPath;
     graph.edges.push({
       source: id(normalizedFilePath),
       target: id(targetPath),

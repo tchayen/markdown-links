@@ -34,6 +34,17 @@ suite("Utils Test Suite", () => {
       assert.strictEqual(links[0], "../parent.md");
     });
 
+    test("should handle workspace-relative paths (issue #48)", () => {
+      const ast: MarkdownNode = {
+        type: "link",
+        url: "/docs/file.md",
+        children: [],
+      };
+      const links = findLinks(ast);
+      assert.strictEqual(links.length, 1);
+      assert.strictEqual(links[0], "/docs/file.md");
+    });
+
     test("should ignore empty links", () => {
       const ast: MarkdownNode = {
         type: "link",
