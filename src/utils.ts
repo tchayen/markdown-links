@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import md5 from "md5";
 import { extname } from "path";
+import { load as parseYaml } from "js-yaml";
 import { MarkdownNode, Graph, WikiLinkNode } from "./types";
 
 export const findLinks = (ast: MarkdownNode): string[] => {
@@ -41,6 +42,27 @@ export const findTitle = (ast: MarkdownNode): string | null => {
     return null;
   }
 
+  // Prefer to find the title field in frontmatter (YAML)
+  for (const child of ast.children) {
+    if (child.type === "yaml" && "value" in child && child.value) {
+      try {
+        const frontmatter = parseYaml(child.value) as Record<string, unknown>;
+        if (frontmatter && typeof frontmatter.title === "string") {
+          let title = frontmatter.title.trim();
+          const titleMaxLength = getTitleMaxLength();
+          if (titleMaxLength > 0 && title.length > titleMaxLength) {
+            title = title.substring(0, titleMaxLength).concat("...");
+          }
+          return title;
+        }
+      } catch (error) {
+        // If YAML parsing fails, continue to fallback methods
+        console.error("Failed to parse frontmatter YAML:", error);
+      }
+    }
+  }
+
+  // If no frontmatter title, fallback to first-level heading
   for (const child of ast.children) {
     if (
       child.type === "heading" &&

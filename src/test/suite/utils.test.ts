@@ -120,6 +120,106 @@ suite("Utils Test Suite", () => {
       assert.strictEqual(title, "Test Title");
     });
 
+    test("should prefer frontmatter title over h1", () => {
+      const ast: MarkdownNode = {
+        type: "root",
+        children: [
+          {
+            type: "yaml",
+            value: "title: Frontmatter Title\nid: 123",
+          },
+          {
+            type: "heading",
+            depth: 1,
+            children: [
+              {
+                type: "text",
+                value: "H1 Title",
+              },
+            ],
+          },
+        ],
+      };
+      const title = findTitle(ast);
+      assert.strictEqual(title, "Frontmatter Title");
+    });
+
+    test("should handle frontmatter title with quotes", () => {
+      const ast: MarkdownNode = {
+        type: "root",
+        children: [
+          {
+            type: "yaml",
+            value: 'title: "Quoted Title"',
+          },
+        ],
+      };
+      const title = findTitle(ast);
+      assert.strictEqual(title, "Quoted Title");
+    });
+
+    test("should handle frontmatter title with single quotes", () => {
+      const ast: MarkdownNode = {
+        type: "root",
+        children: [
+          {
+            type: "yaml",
+            value: "title: 'Single Quoted Title'",
+          },
+        ],
+      };
+      const title = findTitle(ast);
+      assert.strictEqual(title, "Single Quoted Title");
+    });
+
+    test("should fallback to h1 if frontmatter has no title", () => {
+      const ast: MarkdownNode = {
+        type: "root",
+        children: [
+          {
+            type: "yaml",
+            value: "id: 123\nauthor: John",
+          },
+          {
+            type: "heading",
+            depth: 1,
+            children: [
+              {
+                type: "text",
+                value: "H1 Title",
+              },
+            ],
+          },
+        ],
+      };
+      const title = findTitle(ast);
+      assert.strictEqual(title, "H1 Title");
+    });
+
+    test("should handle invalid frontmatter YAML gracefully", () => {
+      const ast: MarkdownNode = {
+        type: "root",
+        children: [
+          {
+            type: "yaml",
+            value: "invalid: yaml: content: [[[",
+          },
+          {
+            type: "heading",
+            depth: 1,
+            children: [
+              {
+                type: "text",
+                value: "H1 Title",
+              },
+            ],
+          },
+        ],
+      };
+      const title = findTitle(ast);
+      assert.strictEqual(title, "H1 Title");
+    });
+
     test("should return null if no h1 found", () => {
       const ast: MarkdownNode = {
         type: "root",

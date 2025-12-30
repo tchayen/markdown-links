@@ -2,7 +2,7 @@
   "name": "markdown-links",
   "displayName": "Markdown Links",
   "description": "Adds command - Show Graph - that displays a graph of local links between markdown files in the current working directory.",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "publisher": "tchayen",
   "engines": {
     "vscode": "^1.85.0"
@@ -93,6 +93,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@types/js-yaml": "^4.0.9",
+    "@types/md5": "^2.3.6",
     "@types/mdast": "^4.0.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.19.27",
@@ -107,8 +109,8 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "@types/md5": "^2.3.6",
     "@vscode/test-electron": "^2.5.2",
+    "js-yaml": "^4.1.1",
     "md5": "^2.3.0",
     "remark-frontmatter": "^5.0.0",
     "remark-parse": "^11.0.0",
