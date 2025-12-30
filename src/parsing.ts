@@ -39,15 +39,20 @@ const getParser = () => {
 };
 
 export const parseFile = async (graph: Graph, filePath: string) => {
-  filePath = path.normalize(filePath);
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
+  // Normalize the file path using VS Code's URI system for cross-platform compatibility
+  const fileUri = vscode.Uri.file(filePath);
+  const normalizedFilePath = fileUri.fsPath;
+
+  const buffer = await vscode.workspace.fs.readFile(fileUri);
   const content = new TextDecoder("utf-8").decode(buffer);
   const parser = getParser();
   const ast = parser.parse(content);
 
   const title: string | null = findTitle(ast);
 
-  const index = graph.nodes.findIndex((node) => node.path === filePath);
+  const index = graph.nodes.findIndex(
+    (node) => node.path === normalizedFilePath,
+  );
 
   if (!title) {
     if (index !== -1) {
@@ -60,28 +65,52 @@ export const parseFile = async (graph: Graph, filePath: string) => {
   if (index !== -1) {
     graph.nodes[index]!.label = title;
   } else {
-    graph.nodes.push({ id: id(filePath), path: filePath, label: title });
+    graph.nodes.push({
+      id: id(normalizedFilePath),
+      path: normalizedFilePath,
+      label: title,
+    });
   }
 
   // Remove edges based on an old version of this file.
-  graph.edges = graph.edges.filter((edge) => edge.source !== id(filePath));
+  graph.edges = graph.edges.filter(
+    (edge) => edge.source !== id(normalizedFilePath),
+  );
 
   // Returns a list of decoded links (by default markdown only supports encoded URI)
   const links = findLinks(ast).map((uri) => decodeURI(uri));
-  const parentDirectory = filePath.split(path.sep).slice(0, -1).join(path.sep);
+  const parentDirUri = vscode.Uri.joinPath(fileUri, "..");
 
   for (const link of links) {
-    let target = path.normalize(link);
-    if (!path.isAbsolute(link)) {
-      target = path.normalize(`${parentDirectory}/${link}`);
+    let targetUri: vscode.Uri;
+
+    if (link.startsWith("/")) {
+      // Treat as path relative to workspace root
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        continue;
+      }
+      // Remove leading slash and join with workspace root
+      targetUri = vscode.Uri.joinPath(workspaceFolder.uri, link.substring(1));
+    } else if (path.isAbsolute(link)) {
+      // Absolute filesystem path
+      targetUri = vscode.Uri.file(link);
+    } else {
+      // Relative path from current file's directory
+      targetUri = vscode.Uri.joinPath(parentDirUri, link);
     }
 
-    graph.edges.push({ source: id(filePath), target: id(target) });
+    const targetPath = targetUri.fsPath;
+    graph.edges.push({
+      source: id(normalizedFilePath),
+      target: id(targetPath),
+    });
   }
 };
 
 export const findFileId = async (filePath: string): Promise<string | null> => {
-  const buffer = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
+  const fileUri = vscode.Uri.file(filePath);
+  const buffer = await vscode.workspace.fs.readFile(fileUri);
   const content = new TextDecoder("utf-8").decode(buffer);
 
   const match = content.match(FILE_ID_REGEXP);
@@ -89,16 +118,19 @@ export const findFileId = async (filePath: string): Promise<string | null> => {
 };
 
 export const learnFileId = async (_graph: Graph, filePath: string) => {
-  const id = await findFileId(filePath);
+  // Normalize the file path using VS Code's URI system
+  const normalizedPath = vscode.Uri.file(filePath).fsPath;
+
+  const id = await findFileId(normalizedPath);
   if (id !== null) {
-    idToPath[id] = filePath;
+    idToPath[id] = normalizedPath;
   }
 
-  const fileName = basename(filePath);
-  idToPath[fileName] = filePath;
+  const fileName = basename(normalizedPath);
+  idToPath[fileName] = normalizedPath;
 
   const fileNameWithoutExt = fileName.split(".").slice(0, -1).join(".");
-  idToPath[fileNameWithoutExt] = filePath;
+  idToPath[fileNameWithoutExt] = normalizedPath;
 };
 
 export const parseDirectory = async (
@@ -116,9 +148,9 @@ export const parseDirectory = async (
   const promises: Promise<void>[] = [];
 
   for (const file of files) {
-    const hiddenFile = path.basename(file.path).startsWith(".");
+    const hiddenFile = path.basename(file.fsPath).startsWith(".");
     if (!hiddenFile) {
-      promises.push(fileCallback(graph, file.path));
+      promises.push(fileCallback(graph, file.fsPath));
     }
   }
 

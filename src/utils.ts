@@ -69,8 +69,16 @@ export const findTitle = (ast: MarkdownNode): string | null => {
 };
 
 export const id = (path: string): string => {
+  // Normalize path using VS Code's URI system for cross-platform consistency
+  // This ensures the same file gets the same ID on Windows and Unix
+  const normalizedPath = vscode.Uri.file(path).fsPath;
   // Extracting file name without extension.
-  return md5(path.substring(0, path.length - extname(path).length));
+  return md5(
+    normalizedPath.substring(
+      0,
+      normalizedPath.length - extname(normalizedPath).length,
+    ),
+  );
 };
 
 export const getConfiguration = (key: string) =>

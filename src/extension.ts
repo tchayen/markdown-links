@@ -38,20 +38,20 @@ const watch = (
 
   // Watch file changes in case user adds a link.
   watcher.onDidChange(async (event) => {
-    await parseFile(graph, event.path);
+    await parseFile(graph, event.fsPath);
     filterNonExistingEdges(graph);
     sendGraph();
   });
 
   // Watch file creation in case user adds a new file.
   watcher.onDidCreate(async (event) => {
-    await parseFile(graph, event.path);
+    await parseFile(graph, event.fsPath);
     filterNonExistingEdges(graph);
     sendGraph();
   });
 
   watcher.onDidDelete(async (event) => {
-    const filePath = path.normalize(event.path);
+    const filePath = event.fsPath;
     const index = graph.nodes.findIndex((node) => node.path === filePath);
     if (index === -1) {
       return;
@@ -78,8 +78,8 @@ const watch = (
 
   vscode.workspace.onDidRenameFiles(async (event) => {
     for (const file of event.files) {
-      const previous = path.normalize(file.oldUri.path);
-      const next = path.normalize(file.newUri.path);
+      const previous = file.oldUri.fsPath;
+      const next = file.newUri.fsPath;
 
       for (const edge of graph.edges) {
         if (edge.source === previous) {
