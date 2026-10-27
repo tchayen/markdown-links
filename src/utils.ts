@@ -219,9 +219,12 @@ export const getFileTypesSetting = () => {
   return getConfiguration("fileTypes") || DEFAULT_VALUE;
 };
 
-export const getExcludePatternsSetting = () => {
+export const getExcludePatternsSetting = (): string[] => {
   const DEFAULT_VALUE = ["**/node_modules/**", "**/.git/**"];
-  return getConfiguration("excludePatterns") || DEFAULT_VALUE;
+  const value: unknown = getConfiguration("excludePatterns");
+  return Array.isArray(value)
+    ? value.filter((pattern): pattern is string => typeof pattern === "string")
+    : DEFAULT_VALUE;
 };
 
 export const getDot = (graph: Graph) => `digraph g {

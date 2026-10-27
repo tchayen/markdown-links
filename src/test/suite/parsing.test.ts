@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import { suite, test } from "mocha";
-import { resolveLinkPath, idResolver } from "../../parsing";
+import { resolveLinkPath, idResolver, isExcluded } from "../../parsing";
 import * as path from "path";
 
 suite("Parsing Test Suite", () => {
@@ -87,6 +87,43 @@ suite("Parsing Test Suite", () => {
         workspaceRoot,
       );
       assert.strictEqual(result, path.join(currentFileDir, "sibling.md"));
+    });
+  });
+
+  suite("isExcluded", () => {
+    const defaults = ["**/node_modules/**", "**/.git/**"];
+
+    test("should keep a regular markdown file", () => {
+      assert.strictEqual(isExcluded("docs/guide.md", defaults), false);
+    });
+
+    test("should exclude files under the default patterns", () => {
+      assert.strictEqual(
+        isExcluded("node_modules/pkg/README.md", defaults),
+        true,
+      );
+      assert.strictEqual(
+        isExcluded("packages/a/node_modules/pkg/README.md", defaults),
+        true,
+      );
+    });
+
+    test("should exclude files under user patterns inside dot folders", () => {
+      const patterns = [...defaults, "**/.claude/worktrees/**"];
+      assert.strictEqual(
+        isExcluded(".claude/worktrees/agent-1/docs/guide.md", patterns),
+        true,
+      );
+      assert.strictEqual(isExcluded(".claude/notes.md", patterns), false);
+    });
+
+    test("should exclude hidden files like the initial scan does", () => {
+      assert.strictEqual(isExcluded("docs/.draft.md", defaults), true);
+    });
+
+    test("should keep everything but hidden files when there are no patterns", () => {
+      assert.strictEqual(isExcluded("node_modules/pkg/README.md", []), false);
+      assert.strictEqual(isExcluded(".draft.md", []), true);
     });
   });
 });

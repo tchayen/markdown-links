@@ -1,10 +1,11 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { parseFile, parseDirectory, learnFileId } from "./parsing";
+import { parseFile, parseDirectory, learnFileId, isExcluded } from "./parsing";
 import {
   filterNonExistingEdges,
   getColumnSetting,
   getConfiguration,
+  getExcludePatternsSetting,
   getFileTypesSetting,
 } from "./utils";
 import { Graph } from "./types";
@@ -29,6 +30,10 @@ const watch = (
     false,
   );
 
+  const excludePatterns = getExcludePatternsSetting();
+  const isWatched = (uri: vscode.Uri) =>
+    !isExcluded(vscode.workspace.asRelativePath(uri, false), excludePatterns);
+
   const sendGraph = () => {
     panel.webview.postMessage({
       type: "refresh",
@@ -38,6 +43,9 @@ const watch = (
 
   // Watch file changes in case user adds a link.
   watcher.onDidChange(async (event) => {
+    if (!isWatched(event)) {
+      return;
+    }
     await parseFile(graph, event.fsPath);
     filterNonExistingEdges(graph);
     sendGraph();
@@ -45,6 +53,9 @@ const watch = (
 
   // Watch file creation in case user adds a new file.
   watcher.onDidCreate(async (event) => {
+    if (!isWatched(event)) {
+      return;
+    }
     await parseFile(graph, event.fsPath);
     filterNonExistingEdges(graph);
     sendGraph();

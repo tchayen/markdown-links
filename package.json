@@ -123,6 +123,7 @@
     "@vscode/test-electron": "^2.5.2",
     "js-yaml": "^4.1.1",
     "md5": "^2.3.0",
+    "minimatch": "^9.0.9",
     "remark-frontmatter": "^5.0.0",
     "remark-parse": "^11.0.0",
     "remark-wiki-link": "^2.0.1",

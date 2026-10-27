@@ -16,6 +16,7 @@ import {
   getConfiguration,
 } from "./utils";
 import { basename } from "path";
+import { minimatch } from "minimatch";
 
 const idToPath: Record<string, string> = {};
 
@@ -151,6 +152,16 @@ export const learnFileId = async (_graph: Graph, filePath: string) => {
   idToPath[fileNameWithoutExt] = normalizedPath;
 };
 
+const isHidden = (filePath: string) => path.basename(filePath).startsWith(".");
+
+// The file watcher can't take exclude patterns, so its events are checked here
+// against the same rules parseDirectory applies to the initial scan.
+export const isExcluded = (relativePath: string, excludePatterns: string[]) =>
+  isHidden(relativePath) ||
+  excludePatterns.some((pattern) =>
+    minimatch(relativePath, pattern, { dot: true }),
+  );
+
 export const parseDirectory = async (
   graph: Graph,
   fileCallback: (graph: Graph, path: string) => Promise<void>,
@@ -162,7 +173,7 @@ export const parseDirectory = async (
     .map((f) => `.${f}`)
     .join(",")}}`;
 
-  const excludePatterns = getExcludePatternsSetting() as string[];
+  const excludePatterns = getExcludePatternsSetting();
   const excludePattern =
     excludePatterns.length > 0 ? `{${excludePatterns.join(",")}}` : undefined;
 
@@ -174,8 +185,7 @@ export const parseDirectory = async (
   const promises: Promise<void>[] = [];
 
   for (const file of files) {
-    const hiddenFile = path.basename(file.fsPath).startsWith(".");
-    if (!hiddenFile) {
+    if (!isHidden(file.fsPath)) {
       promises.push(fileCallback(graph, file.fsPath));
     }
   }
